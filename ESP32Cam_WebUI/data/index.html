@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ESP32-CAM</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <h3>ESP32-CAM Dashboard</h3>
+  <div class="cardrow">
+    <div class="card">
+      <button id="btnSnap">Snapshot ↧</button>
+      <label>Resolution:
+        <select id="res">
+          <option>QVGA</option><option selected>VGA</option><option>SVGA</option>
+          <option>XGA</option><option>SXGA</option><option>UXGA</option>
+        </select>
+      </label>
+    </div>
+    <div class="card">
+      <label>Flash:
+        <input id="flash" type="range" min="0" max="255" value="0">
+      </label>
+    </div>
+  </div>
+  <img id="view" src="/stream?live=1" alt="camera stream">
+  <script>
+    const $ = s => document.querySelector(s);
+    $("#btnSnap").addEventListener("click", async () => {
+      const r = await fetch("/capture"); const b = await r.blob();
+      const url = URL.createObjectURL(b); const a = document.createElement("a");
+      a.href = url; a.download = "snapshot.jpg"; a.click(); URL.revokeObjectURL(url);
+    });
+    $("#res").addEventListener("change", async (e) => {
+      await fetch("/setres?size="+encodeURIComponent(e.target.value));
+      $("#view").src = "/stream?ts=" + Date.now();
+    });
+    $("#flash").addEventListener("input", (e) => {
+      fetch("/flash?pwm="+e.target.value).catch(()=>{});
+    });
+  </script>
+</body>
+</html>

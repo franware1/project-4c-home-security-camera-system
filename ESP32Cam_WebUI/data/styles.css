@@ -1,0 +1,9 @@
+:root { --gap:10px; --bd:#ddd; --r:10px }
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;margin:12px}
+h3{margin:0 0 12px 0}
+.cardrow{display:flex;flex-wrap:wrap;gap:var(--gap);margin-bottom:var(--gap)}
+.card{border:1px solid var(--bd);border-radius:var(--r);padding:12px}
+button,select,input[type=range]{padding:8px 12px;border:1px solid var(--bd);border-radius:8px;background:#fff}
+#view{max-width:100%;border:1px solid var(--bd);border-radius:var(--r)}
+label{display:inline-flex;align-items:center;gap:6px}

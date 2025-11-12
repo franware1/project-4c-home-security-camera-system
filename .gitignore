@@ -24,7 +24,7 @@ frontend/.DS_Store
 # Backend (Express)
 # -----------------------
 /backend/node_modules/
-/backend/.env        # <--- DO NOT COMMIT ESP32 IP OR SECRETS
+/backend/.env
 /backend/.DS_Store
 /backend/debug.log
 

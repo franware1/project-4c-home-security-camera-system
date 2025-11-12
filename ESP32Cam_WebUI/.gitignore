@@ -1,0 +1,54 @@
+# ======================================================
+#  ESP32-CAM / Arduino / LittleFS project .gitignore
+# ======================================================
+
+# ---- Secrets (DO NOT COMMIT WIFI PASSWORDS) ----
+config_secrets.h
+
+# ---- Arduino build artifacts ----
+*.elf
+*.bin
+*.hex
+*.eep
+*.map
+*.d
+*.lst
+*.txt
+*.log
+
+# Arduino build folder (local machine)
+build/
+cmake-build*/ 
+
+# ---- IDE generated files ----
+*.ino.cpp
+*.o
+*.a
+.pio/
+.vscode/
+.idea/
+*.code-workspace
+
+# ---- OS / Editor files ----
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ---- LittleFS binary image (created when uploading /data folder) ----
+*.littlefs.bin
+*.spiffs.bin
+
+# ---- Backup files ----
+*.bak
+*.orig
+*.tmp
+
+# ---- Node / web build (if you later generate frontend) ----
+node_modules/
+dist/
+out/
+
+# ---- Logs ----
+*.log
+logs/
