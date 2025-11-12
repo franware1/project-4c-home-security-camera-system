@@ -1,0 +1,80 @@
+# ========================================================
+#  GLOBAL PROJECT GITIGNORE (for your root folder)
+#  Structure:
+#   backend/
+#   frontend/
+#   ESP32Cam_WebUI/
+# ========================================================
+
+# -----------------------
+# Node / Frontend / Vite
+# -----------------------
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.vite/
+frontend/.env
+frontend/.env.local
+frontend/.DS_Store
+
+# If using yarn/pnpm
+/frontend/yarn.lock
+/frontend/pnpm-lock.yaml
+
+# -----------------------
+# Backend (Express)
+# -----------------------
+/backend/node_modules/
+/backend/.env        # <--- DO NOT COMMIT ESP32 IP OR SECRETS
+/backend/.DS_Store
+/backend/debug.log
+
+# Optional logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# -----------------------
+# Arduino / PlatformIO / ESP32
+# -----------------------
+/ESP32Cam_WebUI/.pio/
+/ESP32Cam_WebUI/.output/
+/ESP32Cam_WebUI/build/
+/ESP32Cam_WebUI/Build/
+/ESP32Cam_WebUI/.vscode/
+/ESP32Cam_WebUI/*.bin
+/ESP32Cam_WebUI/*.elf
+/ESP32Cam_WebUI/*.map
+/ESP32Cam_WebUI/*.pioenv*
+/ESP32Cam_WebUI/.pioenvs/
+/ESP32Cam_WebUI/.gcc-arm*/ 
+/ESP32Cam_WebUI/esp32cam_sketch.ino.bin
+/ESP32Cam_WebUI/esp32cam_sketch.ino.bootloader.bin
+
+# Arduino cache
+**/.cache
+**/.arduinoIDE
+
+# SPIFFS / LittleFS images (generated output)
+ESP32Cam_WebUI/data/**/spiffs.bin
+ESP32Cam_WebUI/data/**/littlefs.bin
+
+# Secrets (if you use a config file)
+ESP32Cam_WebUI/config_secrets.h
+
+# -----------------------
+# OS / IDE / temporary files
+# -----------------------
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.swo
+
+# VSCode local settings
+.vscode/*
+!.vscode/settings.json   # keep workspace settings only if needed
+
+# JetBrains
+.idea/
+*.iml
