@@ -3,8 +3,7 @@ import "./index.css";
 
 function App() {
   // Backend base URL (proxy to ESP32)
-  // Make sure this matches your backend PORT (8000 in your case)
-  const backend = "http://localhost:8000";
+  const backend = "http://localhost:8080";
 
   // Controls
   const [res, setRes] = useState<string>("VGA");

@@ -5,6 +5,7 @@
  *     GET /stream    -> MJPEG multipart stream
  *     GET /flash?pwm=0..255
  *     GET /setres?size=QVGA|VGA|SVGA|XGA|SXGA|UXGA
+ *     GET /setquality?p=10..63   (10=best, 63=worst)
  *     GET /status    -> JSON (optional)
  * - Use with a separate backend (Node/Express) that proxies to the browser.
  *******************************************************/
@@ -16,19 +17,24 @@
 
 // ---- Secrets (put in config_secrets.h; do NOT commit) ----
 //   #pragma once
-//   #define WIFI_SSID "your-ssid"
-//   #define WIFI_PASS "your-password"
+//   #define WIFI_HOME_SSID "your-ssid"
+//   #define WIFI_HOME_PASS "your-password"
 #include "config_secrets.h"
-#ifndef WIFI_SSID
-  #define WIFI_SSID "YOUR_WIFI"
+
+// Fallbacks if not defined in config_secrets.h
+#ifndef WIFI_HOME_SSID
+  #define WIFI_HOME_SSID "YOUR_HOME_SSID"
 #endif
-#ifndef WIFI_PASS
-  #define WIFI_PASS "YOUR_PASS"
+#ifndef WIFI_HOME_PASS
+  #define WIFI_HOME_PASS "YOUR_HOME_PASS"
 #endif
 
-// ---- Camera defaults ----
-#define DEFAULT_FRAMESIZE     FRAMESIZE_VGA   // QVGA/VGA/SVGA/XGA/SXGA/UXGA
-#define DEFAULT_JPEG_QUALITY  20              // 10(best)..63(worst)
+
+// ---- Camera defaults (tuned for speed over quality) ----
+// Use lower resolution for faster streaming (QVGA is 320x240)
+#define DEFAULT_FRAMESIZE     FRAMESIZE_QVGA   // QVGA/VGA/SVGA/XGA/SXGA/UXGA
+// Higher number = more compression = smaller files = faster
+#define DEFAULT_JPEG_QUALITY  30               // 10(best)..63(worst)
 
 // ---- AI-Thinker pins (DO NOT CHANGE) ----
 #define PWDN_GPIO_NUM 32
@@ -95,13 +101,13 @@ bool initCamera() {
   if (psramFound()) {
     config.frame_size   = DEFAULT_FRAMESIZE;
     config.jpeg_quality = DEFAULT_JPEG_QUALITY;
-    config.fb_count     = 2;
+    config.fb_count     = 2;      // 2 buffers keeps streaming smooth
   #ifdef CAMERA_GRAB_LATEST
     config.grab_mode    = CAMERA_GRAB_LATEST;
   #endif
   } else {
     config.frame_size   = FRAMESIZE_QVGA;
-    config.jpeg_quality = 25;
+    config.jpeg_quality = 35;     // a bit more compressed on no-PSRAM boards
     config.fb_count     = 1;
   }
   return (esp_camera_init(&config) == ESP_OK);
@@ -138,6 +144,7 @@ void handleCapture() {
   esp_camera_fb_return(fb);
 }
 
+// MJPEG stream: tuned a bit for responsiveness
 void handleStream() {
   WiFiClient client = server.client();
   if (!client) return;
@@ -151,15 +158,25 @@ void handleStream() {
   );
   while (client.connected()) {
     camera_fb_t* fb = esp_camera_fb_get();
-    if (!fb) { delay(5); continue; }
+    if (!fb) {
+      delay(5);
+      continue;
+    }
     client.print("--frame\r\n");
     client.print("Content-Type: image/jpeg\r\n");
     client.print("Content-Length: "); client.print(fb->len); client.print("\r\n\r\n");
+
     size_t w = client.write(fb->buf, fb->len);
     esp_camera_fb_return(fb);
-    if (w != fb->len) break;
+
+    if (w != fb->len) {
+      // client couldn’t keep up → break out
+      break;
+    }
     client.print("\r\n");
-    delay(1);
+
+    // Small delay so we don't absolutely hammer the hotspot
+    delay(5);
   }
   client.stop();
 }
@@ -172,6 +189,15 @@ void handleSetRes() {
   if (!s) { server.send(500, "text/plain", "no sensor"); return; }
   s->set_framesize(s, fs);
   server.send(200, "text/plain", "res=" + server.arg("size"));
+}
+
+void handleSetQuality() {
+  if (!server.hasArg("p")) { server.send(400, "text/plain", "missing ?p=10..63"); return; }
+  int q = constrain(server.arg("p").toInt(), 10, 63);
+  sensor_t* s = esp_camera_sensor_get();
+  if (!s) { server.send(500, "text/plain", "no sensor"); return; }
+  s->set_quality(s, q);
+  server.send(200, "text/plain", String("quality=") + q);
 }
 
 void handleFlash() {
@@ -188,49 +214,65 @@ void handleStatus() {
   server.send(200, "application/json", j);
 }
 
+// ---------- WIFI CONNECT (HOME / HOTSPOT) ----------
+void connectWiFi() {
+  WiFi.persistent(false);
+  WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);              // keep WiFi fully awake for better throughput
+  WiFi.setHostname("esp32cam");
+
+  Serial.println("[HOME] Connecting to WiFi...");
+  Serial.printf("SSID: %s\n", WIFI_HOME_SSID);
+  WiFi.begin(WIFI_HOME_SSID, WIFI_HOME_PASS);
+
+  uint32_t t0 = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - t0 < 30000) {
+    delay(500);
+    wl_status_t st = WiFi.status();
+    Serial.print(".");
+    Serial.print((int)st);  // print numeric status
+  }
+  Serial.println();
+
+  wl_status_t finalStatus = WiFi.status();
+  if (finalStatus == WL_CONNECTED) {
+    Serial.print("WiFi connected: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.print("WiFi connect failed. Status = ");
+    Serial.println((int)finalStatus);
+  }
+}
+
 // ---------- Setup / Loop ----------
 void setup() {
   Serial.begin(115200);
   delay(100);
 
-  if (!initCamera()){
+  if (!initCamera()) {
     Serial.println("Camera init failed! Check power/board/PSRAM.");
-    while(true){ delay(1000); }
+    while (true) { delay(1000); }
   }
   initFlashPWM();
 
   // WiFi
-  WiFi.persistent(false);
-  WiFi.mode(WIFI_STA);
-  WiFi.setSleep(false);
-  WiFi.setHostname("esp32cam");
-  Serial.printf("Connecting to %s\n", WIFI_SSID);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  uint32_t t0 = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - t0 < 15000) {
-    delay(500); Serial.print(".");
-  }
-  Serial.println();
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.print("WiFi connected: "); Serial.println(WiFi.localIP());
-  } else {
-    Serial.println("WiFi connect failed (check SSID/pass and 2.4 GHz).");
-  }
+  connectWiFi();
 
   // API routes only
-  server.on("/capture", HTTP_GET, handleCapture);
-  server.on("/stream",  HTTP_GET, handleStream);
-  server.on("/flash",   HTTP_GET, handleFlash);
-  server.on("/setres",  HTTP_GET, handleSetRes);
-  server.on("/status",  HTTP_GET, handleStatus);
+  server.on("/capture",   HTTP_GET, handleCapture);
+  server.on("/stream",    HTTP_GET, handleStream);
+  server.on("/flash",     HTTP_GET, handleFlash);
+  server.on("/setres",    HTTP_GET, handleSetRes);
+  server.on("/setquality",HTTP_GET, handleSetQuality);
+  server.on("/status",    HTTP_GET, handleStatus);
 
   // 404 for everything else
-  server.onNotFound([](){
+  server.onNotFound([]() {
     server.send(404, "text/plain", "Not found");
   });
 
   server.begin();
-  Serial.println("HTTP server started. Try: /capture, /stream, /flash, /setres, /status");
+  Serial.println("HTTP server started. Try: /capture, /stream, /flash, /setres, /setquality, /status");
 }
 
 void loop() {

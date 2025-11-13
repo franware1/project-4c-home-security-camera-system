@@ -14,7 +14,7 @@ function normalizeHost(v) {
   return v.startsWith('http://') || v.startsWith('https://') ? v : `http://${v}`;
 }
 
-const RAW_HOST = process.env.ESP_HOST || 'http://192.168.1.50';
+const RAW_HOST = '192.168.137.17' || 'http://192.168.1.50';
 const ESP_HOST = normalizeHost(RAW_HOST);       // e.g. "http://192.168.12.181"
 const PORT = Number(process.env.PORT) || 8080;
 
