@@ -2,86 +2,126 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import "./index.css";
 
 function App() {
-  // Backend base URL (proxy to ESP32)
-  const backend = "http://localhost:8080";
-
-  // Controls
-  const [res, setRes] = useState<string>("VGA");
-  const [flash, setFlash] = useState<number>(0);
+  // ESP32 base address (user editable)
+  const [espHost, setEspHost] = useState<string>("");
 
   // Stream state
-  const [isStreaming, setIsStreaming] = useState<boolean>(true);
-  const [streamVersion, setStreamVersion] = useState<number>(0); // used to "kick" the stream
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
 
-  // Build stream URL with cache-busting (via version)
+  // Flash state (0, 100, 255)
+  const [flashLevel, setFlashLevel] = useState<"off" | "low" | "high">("off");
+
+  // Helper: normalize ESP host into a usable base URL
+  const normalizedBase = useMemo(() => {
+    let base = espHost.trim();
+    if (!base) return "";
+    if (!base.startsWith("http://") && !base.startsWith("https://")) {
+      base = "http://" + base;
+    }
+    // strip trailing slashes
+    return base.replace(/\/+$/, "");
+  }, [espHost]);
+
+  // Stream URL
   const streamUrl = useMemo(() => {
-    if (!isStreaming) return "";
-    // each time streamVersion changes, URL changes -> browser reconnects
-    return `${backend}/api/stream?v=${streamVersion}`;
-  }, [backend, isStreaming, streamVersion]);
+    if (!isStreaming || !normalizedBase) return "";
+    return `${normalizedBase}/stream`;
+  }, [normalizedBase, isStreaming]);
 
-  // Start/stop helpers
+  // Helper to build URLs
+  const buildUrl = useCallback(
+    (path: string) => {
+      if (!normalizedBase) return "";
+      return normalizedBase + path;
+    },
+    [normalizedBase]
+  );
+
+  // Start/stop stream
   const startStream = useCallback(() => {
+    if (!normalizedBase) {
+      alert("Please enter the ESP32 address first.");
+      return;
+    }
     setIsStreaming(true);
-    setStreamVersion((v) => v + 1); // force a fresh connection
-  }, []);
+  }, [normalizedBase]);
 
   const stopStream = useCallback(() => {
-    setIsStreaming(false); // src becomes "" via streamUrl
+    setIsStreaming(false);
   }, []);
 
-  // Reconnect if stream errors out (basic retry)
+  // Stream error: just log; user can press Start again
   const onStreamError = useCallback(() => {
-    if (!isStreaming) return;
-    // small delay, then bump version so URL changes
-    setTimeout(() => {
-      setStreamVersion((v) => v + 1);
-    }, 800);
-  }, [isStreaming]);
+    console.warn("Stream error (img onError fired)");
+    // do not flip isStreaming automatically
+  }, []);
 
-  // Actions
+  // Snapshot
   const snap = useCallback(async () => {
-    const r = await fetch(`${backend}/api/capture`);
-    const b = await r.blob();
-    const url = URL.createObjectURL(b);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `snapshot_${Date.now()}.jpg`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [backend]);
+    const url = buildUrl("/capture");
+    if (!url) {
+      alert("Please enter the ESP32 address first.");
+      return;
+    }
 
-  const changeRes = useCallback(
-    async (size: string) => {
-      setRes(size);
-      await fetch(`${backend}/api/setres?size=${encodeURIComponent(size)}`);
-      // Nudge the stream to refresh if it's running
-      if (isStreaming) {
-        setStreamVersion((v) => v + 1);
+    try {
+      const response = await fetch(url, {
+        // With the ESP32 sending Access-Control-Allow-Origin: *,
+        // this will be allowed.
+        mode: "cors",
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = `snapshot_${Date.now()}.jpg`; // this now works (same-origin blob)
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      console.error("snapshot failed:", err);
+      alert("Snapshot failed. Check console for details.");
+    }
+  }, [buildUrl]);
+
+  // Map flash level to PWM
+  const levelToPwm = (level: "off" | "low" | "high"): number => {
+    if (level === "off") return 0;
+    if (level === "low") return 100;
+    return 255; // high
+  };
+
+  // Flash change
+  const changeFlash = useCallback(
+    async (level: "off" | "low" | "high") => {
+      setFlashLevel(level);
+      const pwm = levelToPwm(level);
+      const url = buildUrl(`/flash?pwm=${pwm}`);
+      if (!url) return;
+      try {
+        await fetch(url);
+      } catch (err) {
+        console.error("flash failed:", err);
       }
     },
-    [backend, isStreaming]
+    [buildUrl]
   );
 
-  const changeFlash = useCallback(
-    async (value: number) => {
-      setFlash(value);
-      await fetch(`${backend}/api/flash?pwm=${value}`).catch(() => {});
-    },
-    [backend]
-  );
-
-  // Timelapse recorder (client-side)
-  const [recording, setRecording] = useState<boolean>(false);
-  const [intervalMs, setIntervalMs] = useState<number>(2000);
-
+  // Just to reset flash on mount if you want (optional)
   useEffect(() => {
-    if (!recording) return;
-    const id = setInterval(() => {
-      snap();
-    }, intervalMs);
-    return () => clearInterval(id);
-  }, [recording, intervalMs, snap]);
+    // try to set flash off at start if address is already filled
+    if (!normalizedBase) return;
+    changeFlash("off");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once
 
   return (
     <div className="page">
@@ -92,13 +132,25 @@ function App() {
         </div>
 
         <div className="stream-box">
-          <img
-            id="cam"
-            src={streamUrl}
-            alt="ESP32-CAM"
-            onError={onStreamError}
-            style={{ width: "100%", height: "auto" }}
-          />
+          {normalizedBase ? (
+            isStreaming ? (
+              <img
+                id="cam"
+                src={streamUrl}
+                alt="ESP32-CAM"
+                onError={onStreamError}
+                style={{ width: "100%", height: "auto" }}
+              />
+            ) : (
+              <div className="stream-placeholder">
+                Stream stopped. Press Start to begin streaming.
+              </div>
+            )
+          ) : (
+            <div className="stream-placeholder">
+              Enter ESP32 address on the right to start the stream.
+            </div>
+          )}
         </div>
       </div>
 
@@ -106,80 +158,70 @@ function App() {
       <div className="panel controls">
         <h3>Controls</h3>
 
+        {/* ESP32 address */}
         <label className="row">
-          <span>Resolution</span>
-          <select value={res} onChange={(e) => changeRes(e.target.value)}>
-            <option>QVGA</option>
-            <option>VGA</option>
-            <option>SVGA</option>
-            <option>XGA</option>
-            <option>SXGA</option>
-            <option>UXGA</option>
-          </select>
+          <span>ESP32 Address</span>
+          <input
+            type="text"
+            placeholder="e.g. 192.168.137.17"
+            value={espHost}
+            onChange={(e) => setEspHost(e.target.value)}
+            className="mono"
+          />
         </label>
 
+        {/* Flash dropdown */}
         <label className="row">
           <span>Flash</span>
-          <input
-            type="range"
-            min={0}
-            max={255}
-            value={flash}
-            onChange={(e) => changeFlash(Number(e.target.value))}
-          />
-          <span className="mono">{flash}</span>
+          <select
+            value={flashLevel}
+            onChange={(e) =>
+              changeFlash(e.target.value as "off" | "low" | "high")
+            }
+            disabled={!normalizedBase}
+          >
+            <option value="off">Off</option>
+            <option value="low">Low</option>
+            <option value="high">High</option>
+          </select>
         </label>
 
         <div className="row buttons">
           {isStreaming ? (
-            <button className="secondary" onClick={stopStream}>
+            <button
+              className="secondary"
+              onClick={stopStream}
+              disabled={!normalizedBase}
+            >
               Stop
             </button>
           ) : (
-            <button onClick={startStream}>Start</button>
-          )}
-          <button onClick={snap}>Snapshot</button>
-        </div>
-
-        <div className="divider" />
-
-        <h4>Timelapse (client-side)</h4>
-        <label className="row">
-          <span>Interval (ms)</span>
-          <input
-            type="number"
-            min={500}
-            step={100}
-            value={intervalMs}
-            onChange={(e) => setIntervalMs(Number(e.target.value))}
-          />
-        </label>
-        <div className="row buttons">
-          {!recording ? (
-            <button onClick={() => setRecording(true)}>Start Recording</button>
-          ) : (
-            <button className="danger" onClick={() => setRecording(false)}>
-              Stop Recording
+            <button onClick={startStream} disabled={!normalizedBase}>
+              Start
             </button>
           )}
+          <button onClick={snap} disabled={!normalizedBase}>
+            Snapshot
+          </button>
         </div>
       </div>
 
       {/* Bottom-right action bar */}
       <div className="actionbar">
-        <button onClick={snap}>Snapshot</button>
+        <button onClick={snap} disabled={!normalizedBase}>
+          Snapshot
+        </button>
         {isStreaming ? (
-          <button className="secondary" onClick={stopStream}>
+          <button
+            className="secondary"
+            onClick={stopStream}
+            disabled={!normalizedBase}
+          >
             Stop
           </button>
         ) : (
-          <button onClick={startStream}>Start</button>
-        )}
-        {!recording ? (
-          <button onClick={() => setRecording(true)}>Record</button>
-        ) : (
-          <button className="danger" onClick={() => setRecording(false)}>
-            Stop
+          <button onClick={startStream} disabled={!normalizedBase}>
+            Start
           </button>
         )}
       </div>
