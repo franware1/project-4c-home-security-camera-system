@@ -21,15 +21,15 @@
 
 // Fallbacks if not defined in config_secrets.h
 #ifndef WIFI_HOME_SSID
-  #define WIFI_HOME_SSID "YOUR_HOME_SSID"
+#define WIFI_HOME_SSID "YOUR_HOME_SSID"
 #endif
 #ifndef WIFI_HOME_PASS
-  #define WIFI_HOME_PASS "YOUR_HOME_PASS"
+#define WIFI_HOME_PASS "YOUR_HOME_PASS"
 #endif
 
 // ---- Camera defaults (fixed VGA) ----
-#define DEFAULT_FRAMESIZE     FRAMESIZE_VGA   // 640x480
-#define DEFAULT_JPEG_QUALITY  35              // 10(best)..63(worst), higher=faster
+#define DEFAULT_FRAMESIZE FRAMESIZE_VGA  // 640x480
+#define DEFAULT_JPEG_QUALITY 35          // 10(best)..63(worst), higher=faster
 
 // ---- AI-Thinker pins (DO NOT CHANGE) ----
 #define PWDN_GPIO_NUM 32
@@ -50,61 +50,69 @@
 #define PCLK_GPIO_NUM 22
 
 // ---- Flash LED ----
-#define LED_FLASH_PIN        4
-#define LED_FLASH_LEDC_CH    4
-#define LED_FLASH_LEDC_FREQ  5000
-#define LED_FLASH_LEDC_BITS  8
+#define LED_FLASH_PIN 4
+#define LED_FLASH_LEDC_CH 4
+#define LED_FLASH_LEDC_FREQ 5000
+#define LED_FLASH_LEDC_BITS 8
 
 WebServer server(80);
 
+//Camera Name
+const char* CAMERA_NAME = "Esp32Cam-1";
+const char* CAMERA_ROOM = "Outside View";
+const char* CAMERA_ADDRESS = "123 Main Street";
+
 // ---- Debug counters ----
-uint32_t g_captureCalls   = 0;
+uint32_t g_captureCalls = 0;
 uint32_t g_streamSessions = 0;
-uint32_t g_flashCalls     = 0;
-uint32_t g_statusCalls    = 0;
-uint32_t g_debugCalls     = 0;
+uint32_t g_flashCalls = 0;
+uint32_t g_statusCalls = 0;
+uint32_t g_debugCalls = 0;
 
 // ---- Streaming state (non-blocking) ----
 WiFiClient streamClient;
-bool       streamingActive = false;
-uint32_t   lastFrameMs     = 0;
+bool streamingActive = false;
+uint32_t lastFrameMs = 0;
 const uint32_t STREAM_INTERVAL_MS = 10;  // min delay between frames
+
+
+
 
 // ---------- Camera init ----------
 bool initCamera() {
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
-  config.ledc_timer   = LEDC_TIMER_0;
-  config.pin_d0       = Y2_GPIO_NUM;
-  config.pin_d1       = Y3_GPIO_NUM;
-  config.pin_d2       = Y4_GPIO_NUM;
-  config.pin_d3       = Y5_GPIO_NUM;
-  config.pin_d4       = Y6_GPIO_NUM;
-  config.pin_d5       = Y7_GPIO_NUM;
-  config.pin_d6       = Y8_GPIO_NUM;
-  config.pin_d7       = Y9_GPIO_NUM;
-  config.pin_xclk     = XCLK_GPIO_NUM;
-  config.pin_pclk     = PCLK_GPIO_NUM;
-  config.pin_vsync    = VSYNC_GPIO_NUM;
-  config.pin_href     = HREF_GPIO_NUM;
+  config.ledc_timer = LEDC_TIMER_0;
+  config.pin_d0 = Y2_GPIO_NUM;
+  config.pin_d1 = Y3_GPIO_NUM;
+  config.pin_d2 = Y4_GPIO_NUM;
+  config.pin_d3 = Y5_GPIO_NUM;
+  config.pin_d4 = Y6_GPIO_NUM;
+  config.pin_d5 = Y7_GPIO_NUM;
+  config.pin_d6 = Y8_GPIO_NUM;
+  config.pin_d7 = Y9_GPIO_NUM;
+  config.pin_xclk = XCLK_GPIO_NUM;
+  config.pin_pclk = PCLK_GPIO_NUM;
+  config.pin_vsync = VSYNC_GPIO_NUM;
+  config.pin_href = HREF_GPIO_NUM;
   config.pin_sscb_sda = SIOD_GPIO_NUM;
   config.pin_sscb_scl = SIOC_GPIO_NUM;
-  config.pin_pwdn     = PWDN_GPIO_NUM;
-  config.pin_reset    = RESET_GPIO_NUM;
+  config.pin_pwdn = PWDN_GPIO_NUM;
+  config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
 
   if (psramFound()) {
-    config.frame_size   = DEFAULT_FRAMESIZE;
+    config.frame_size = DEFAULT_FRAMESIZE;
     config.jpeg_quality = DEFAULT_JPEG_QUALITY;
-    config.fb_count     = 1;   // single buffer for stability
-  #ifdef CAMERA_GRAB_LATEST
-    config.grab_mode    = CAMERA_GRAB_LATEST;
-  #endif
+    config.fb_count = 1;  // single buffer for stability
+#ifdef CAMERA_GRAB_LATEST
+    config.grab_mode = CAMERA_GRAB_LATEST;
+#endif
   } else {
-    config.frame_size   = FRAMESIZE_QVGA;
+    config.frame_size = FRAMESIZE_QVGA;
     config.jpeg_quality = 40;
-    config.fb_count     = 1;
+    config.fb_count = 1;
   }
 
   esp_err_t err = esp_camera_init(&config);
@@ -163,6 +171,16 @@ void handleCapture() {
   Serial.printf("[CAPTURE] wrote %u bytes\n", (unsigned)w);
 }
 
+//Handle Camera info
+void handleCameraInfo() {
+  String json = "{";
+  json += "\"name\":\"" + String(CAMERA_NAME) + "\",";
+  json += "\"room\":\"" + String(CAMERA_ROOM) + "\",";
+  json += "\"address\":\"" + String(CAMERA_ADDRESS) + "\"";
+  json += "}";
+  server.send(200, "application/json", json);
+}
+
 
 // Non-blocking stream: set up client + headers; frames sent in loop()
 void handleStream() {
@@ -188,8 +206,7 @@ void handleStream() {
     "Content-Type: multipart/x-mixed-replace; boundary=frame\r\n"
     "Cache-Control: no-cache, no-store, must-revalidate\r\n"
     "Pragma: no-cache\r\n"
-    "Connection: keep-alive\r\n\r\n"
-  );
+    "Connection: keep-alive\r\n\r\n");
 
   streamingActive = true;
   lastFrameMs = 0;
@@ -222,9 +239,7 @@ void handleStatus() {
   uint32_t t0 = millis();
   Serial.printf("[STATUS] #%u called at %lu ms\n", g_statusCalls, t0);
 
-  String j = String("{\"ip\":\"") + WiFi.localIP().toString() +
-             "\",\"heap\":" + ESP.getFreeHeap() +
-             ",\"psram\":" + ESP.getPsramSize() + "}";
+  String j = String("{\"ip\":\"") + WiFi.localIP().toString() + "\",\"heap\":" + ESP.getFreeHeap() + ",\"psram\":" + ESP.getPsramSize() + "}";
   server.send(200, "application/json", j);
 }
 
@@ -235,11 +250,11 @@ void handleDebug() {
   Serial.printf("[DEBUG] #%u called at %lu ms\n", g_debugCalls, t0);
 
   String j = "{";
-  j += "\"capture\":"   + String(g_captureCalls);
-  j += ",\"stream\":"   + String(g_streamSessions);
-  j += ",\"flash\":"    + String(g_flashCalls);
-  j += ",\"status\":"   + String(g_statusCalls);
-  j += ",\"debug\":"    + String(g_debugCalls);
+  j += "\"capture\":" + String(g_captureCalls);
+  j += ",\"stream\":" + String(g_streamSessions);
+  j += ",\"flash\":" + String(g_flashCalls);
+  j += ",\"status\":" + String(g_statusCalls);
+  j += ",\"debug\":" + String(g_debugCalls);
   j += "}";
   server.send(200, "application/json", j);
 }
@@ -338,10 +353,11 @@ void setup() {
 
   // Routes
   server.on("/capture", HTTP_GET, handleCapture);
-  server.on("/stream",  HTTP_GET, handleStream);
-  server.on("/flash",   HTTP_GET, handleFlash);
-  server.on("/status",  HTTP_GET, handleStatus);
-  server.on("/debug",   HTTP_GET, handleDebug);
+  server.on("/stream", HTTP_GET, handleStream);
+  server.on("/flash", HTTP_GET, handleFlash);
+  server.on("/status", HTTP_GET, handleStatus);
+  server.on("/info", HTTP_GET, handleCameraInfo);
+  server.on("/debug", HTTP_GET, handleDebug);
 
   server.onNotFound([]() {
     Serial.printf("[404] %s\n", server.uri().c_str());
@@ -354,6 +370,6 @@ void setup() {
 }
 
 void loop() {
-  server.handleClient();   // handle new HTTP requests
-  pumpStreamFrame();       // send one frame if streaming
+  server.handleClient();  // handle new HTTP requests
+  pumpStreamFrame();      // send one frame if streaming
 }

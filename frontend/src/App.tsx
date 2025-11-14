@@ -1,16 +1,23 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import "./index.css";
+
+import placeholderImg from "./assets/PhotoPlaceholder.jpg";
+import locationIcon from "./assets/locationIcon.png";
 
 function App() {
   // Backend address, stored in localStorage
   const backend = "http://localhost:8000";
+
+  // Camera info
+  const [cameraName, setCameraName] = useState<string>("Camera");
+  const [cameraRoom, setCameraRoom] = useState<string>("Home View");
+  const [cameraAddress, setCameraAddress] = useState<string>("Street Address");
 
   // Whether streaming is on
   const [isStreaming, setIsStreaming] = useState(false);
 
   // Flash level
   const [flashLevel, setFlashLevel] = useState<"off" | "low" | "high">("off");
-
 
   // Build full URL from backend base + path
   const buildUrl = (path: string) => {
@@ -25,11 +32,31 @@ function App() {
   const stopStream = () => setIsStreaming(false);
   const onStreamError = () => console.warn("Stream error.");
 
+  //Camera info
+
+  useEffect(() => {
+    if (!backend) return;
+
+    const fetchInfo = async () => {
+      try {
+        const res = await fetch(`${backend}/api/camera-info`);
+        if (!res.ok) throw new Error("Failed to fetch camera info");
+        const data = await res.json();
+
+        if (data.name) setCameraName(data.name);
+        if (data.room) setCameraRoom(data.room);
+        if (data.address) setCameraAddress(data.address);
+      } catch (err) {
+        console.error("camera info error:", err);
+      }
+    };
+
+    fetchInfo();
+  }, []);
+
   // Snapshot
   const snap = useCallback(async () => {
     const url = buildUrl("/api/capture");
-    if (!url) return alert("Enter backend address first!");
-
     try {
       const res = await fetch(url);
       const blob = await res.blob();
@@ -67,9 +94,7 @@ function App() {
 
   return (
     <div className="page">
-      {/* Left: Stream */}
-      <div className="panel stream">
-        <h3>Live Stream</h3>
+      <div className="stream">
         <div className="stream-box">
           {isStreaming && backend ? (
             <img
@@ -79,14 +104,28 @@ function App() {
               onError={onStreamError}
             />
           ) : (
-            <div className="stream-placeholder">
-              Enter backend address and press Start.
-            </div>
+            <img
+              src={placeholderImg}
+              alt="Placeholder"
+              className="placeholder-image"
+            />
           )}
+          <div className="img-options left">
+            <button>{cameraName}</button>
+            <div className="camera-info">
+              <h2>{cameraRoom}</h2>
+              <span className="location">
+                <img src={locationIcon} className="small-icon" alt="Location" />{" "}
+                {cameraAddress}
+              </span>
+            </div>
+          </div>
+          <div className="img-options right">
+            <button onClick={isStreaming ? stopStream : startStream}>
+              {isStreaming ? "Stop Stream" : "Start Stream"}
+            </button>
+          </div>
         </div>
-        <button onClick={isStreaming ? stopStream : startStream}>
-          {isStreaming ? "Stop Stream" : "Start Stream"}
-        </button>
       </div>
 
       {/* Right: Controls */}
@@ -97,7 +136,9 @@ function App() {
           <span>Flash</span>
           <select
             value={flashLevel}
-            onChange={(e) => changeFlash(e.target.value as "off" | "low" | "high")}
+            onChange={(e) =>
+              changeFlash(e.target.value as "off" | "low" | "high")
+            }
           >
             <option value="off">Off</option>
             <option value="low">Low</option>
@@ -107,7 +148,6 @@ function App() {
 
         <button onClick={snap}>Snapshot</button>
       </div>
-
     </div>
   );
 }

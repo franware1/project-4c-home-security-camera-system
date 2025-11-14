@@ -73,6 +73,11 @@ app.get('/api/capture', (req, res) => {
   proxyGet(req, res, '/capture');
 });
 
+// Get camera info (name, etc.) -> /api/camera-info
+app.get('/api/camera-info', (req, res) => {
+  proxyGet(req, res, '/info');
+});
+
 // Control flash (expects ?pwm=0–255) -> /api/flash?pwm=...
 app.get('/api/flash', (req, res) => {
   const { pwm } = req.query;
