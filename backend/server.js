@@ -14,95 +14,91 @@ function normalizeHost(v) {
   return v.startsWith('http://') || v.startsWith('https://') ? v : `http://${v}`;
 }
 
-const RAW_HOST = '192.168.137.17' || 'http://192.168.1.50';
-const ESP_HOST = normalizeHost(RAW_HOST);       // e.g. "http://192.168.12.181"
-const PORT = Number(process.env.PORT) || 8080;
+const ESP_HOST_RAW = process.env.ESP_HOST || ''; // e.g. "192.168.1.42" or "192.168.1.42:81"
+const ESP_HOST = normalizeHost(ESP_HOST_RAW);    // ensures http:// prefix if missing
+const PORT = process.env.PORT || 4000;           // backend port
 
-const ESP_URL = new URL(ESP_HOST);
-const netClient = ESP_URL.protocol === 'https:' ? https : http;
-
-const app = express();
-app.use(cors());              // Allow all in dev; lock down later if you want
-app.use(express.json());
-app.use(morgan('dev'));
-
-console.log(`Backend on port ${PORT}`);
-console.log(`Proxying ESP32 at ${ESP_HOST}`);
-
-// Helper to build full ESP URLs safely
-const U = (p) => new URL(p, ESP_HOST).toString();
-
-// Helper to proxy a GET and pipe raw body/headers to client (for JPEG/MJPEG)
-function proxyPipe(pathname, res, overrideHeaders = {}) {
-  const url = U(pathname);
-  netClient
-    .get(url, (r) => {
-      // Forward headers from ESP, with optional overrides
-      Object.entries(r.headers).forEach(([k, v]) => {
-        if (v) res.setHeader(k, v);
-      });
-      Object.entries(overrideHeaders).forEach(([k, v]) => res.setHeader(k, v));
-
-      // Pipe body
-      r.pipe(res);
-    })
-    .on('error', (err) => {
-      res.status(502).send(`Upstream error: ${String(err)}`);
-    });
+if (!ESP_HOST) {
+  console.warn('\n⚠️  No ESP_HOST set in .env – backend will start, but ESP routes will fail.\n');
 }
 
-// ---------- API: status (optional; ESP must implement /status) ----------
-app.get('/api/status', async (req, res) => {
-  try {
-    const r = await fetch(U('/status'));
-    res.status(r.status);
-    // Forward JSON (or text) as-is
-    r.headers.forEach((v, k) => res.setHeader(k, v));
-    res.send(await r.text());
-  } catch (e) {
-    res.status(502).send(String(e));
+// Resolve __dirname in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+
+// ---------- Middleware ----------
+app.use(cors());
+app.use(morgan('dev'));
+app.use(express.json());
+
+// Helper to choose http/https based on ESP_HOST
+function getHttpClient(url) {
+  return url.startsWith('https://') ? https : http;
+}
+
+// Generic proxy helper for GET requests
+function proxyGet(req, res, targetPath) {
+  if (!ESP_HOST) {
+    return res.status(500).json({ error: 'ESP_HOST is not configured on the server' });
   }
-});
 
-// ---------- API: capture (single JPEG) ----------
-app.get('/api/capture', (req, res) => {
-  // Force JPEG content-type in case upstream omits it
-  proxyPipe('/capture', res, { 'Content-Type': 'image/jpeg' });
-});
+  const url = `${ESP_HOST}${targetPath}`;
+  const client = getHttpClient(url);
 
-// ---------- API: stream (MJPEG) ----------
+  const espReq = client.get(url, espRes => {
+    // Forward original status and headers (especially important for stream / images)
+    res.writeHead(espRes.statusCode || 500, espRes.headers);
+    espRes.pipe(res);
+  });
+
+  espReq.on('error', err => {
+    console.error(`Error proxying to ESP (${url}):`, err.message);
+    if (!res.headersSent) {
+      res.status(502).json({ error: 'Failed to reach ESP32', details: err.message });
+    }
+  });
+}
+
+// ---------- API Routes ----------
+
+// Stream video from ESP -> /api/stream
 app.get('/api/stream', (req, res) => {
-  // ESP sets multipart/x-mixed-replace; we just pipe through
-  proxyPipe('/stream', res);
+  proxyGet(req, res, '/stream');
 });
 
-// ---------- Controls ----------
-app.get('/api/flash', async (req, res) => {
-  const pwm = req.query?.pwm ?? '0';
-  try {
-    const r = await fetch(U(`/flash?pwm=${encodeURIComponent(pwm)}`));
-    res.status(r.status).send(await r.text());
-  } catch (e) {
-    res.status(502).send(String(e));
+// Capture single frame -> /api/capture
+app.get('/api/capture', (req, res) => {
+  proxyGet(req, res, '/capture');
+});
+
+// Control flash (expects ?pwm=0–255) -> /api/flash?pwm=...
+app.get('/api/flash', (req, res) => {
+  const { pwm } = req.query;
+
+  if (pwm === undefined) {
+    return res.status(400).json({ error: 'Missing "pwm" query parameter' });
   }
+
+  const targetPath = `/flash?pwm=${encodeURIComponent(pwm)}`;
+  proxyGet(req, res, targetPath);
 });
 
-app.get('/api/setres', async (req, res) => {
-  const size = req.query?.size ?? 'VGA';
-  try {
-    const r = await fetch(U(`/setres?size=${encodeURIComponent(size)}`));
-    res.status(r.status).send(await r.text());
-  } catch (e) {
-    res.status(502).send(String(e));
-  }
+// Optional: simple health check (does NOT call ESP)
+app.get('/api/health', (req, res) => {
+  res.json({
+    ok: true,
+    espHost: ESP_HOST_RAW || null,
+  });
 });
 
-// ---------- Serve React build in production ----------
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// ---------- Static Frontend (React build) ----------
 const distDir = path.join(__dirname, '../frontend/dist');
 
-// Only enable static serving if the build exists
+// Serve compiled frontend if it exists
 app.use(express.static(distDir));
+
 // Catch-all: let React Router handle client routes
 app.use((req, res) => {
   res.sendFile(path.join(distDir, 'index.html'));
