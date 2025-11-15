@@ -111,6 +111,6 @@ app.use((req, res) => {
 
 // ---------- Start ----------
 app.listen(PORT, () => {
-  console.log(`\n✅ Backend listening:  http://localhost:${PORT}`);
-  console.log(`✅ ESP32 target:       ${ESP_HOST}\n`);
+  console.log(`\n✅ Backend listening:\nhttp://localhost:${PORT}`);
+  console.log(`✅ ESP32 target:\n${ESP_HOST}\n`);
 });
