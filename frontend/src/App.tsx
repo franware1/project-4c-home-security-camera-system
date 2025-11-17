@@ -94,6 +94,7 @@ function App() {
 
   return (
     <div className="page">
+      {/* Stream Image */}
       <div className="stream">
         <div className="stream-box">
           {isStreaming && backend ? (
@@ -128,11 +129,19 @@ function App() {
         </div>
       </div>
 
-      {/* Right: Controls */}
-      <div className="panel controls">
-        <h3>Controls</h3>
+      {/* Members */}
+      <div className="panel members-activity">
+        <div className="members"> 
+          <h2>Members</h2>
+          <div className="member-img">
+            <img src="https://avatar.iran.liara.run/public" />
+            <img src="https://avatar.iran.liara.run/public/3" />
+            <img src="https://avatar.iran.liara.run/public/29" />
+            <img src="https://avatar.iran.liara.run/public/8" />
+          </div>
+        </div>
 
-        <label className="row">
+        {/* <label className="row">
           <span>Flash</span>
           <select
             value={flashLevel}
@@ -146,7 +155,7 @@ function App() {
           </select>
         </label>
 
-        <button onClick={snap}>Snapshot</button>
+        <button onClick={snap}>Snapshot</button> */}
       </div>
     </div>
   );
