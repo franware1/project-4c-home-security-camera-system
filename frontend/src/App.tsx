@@ -151,7 +151,40 @@ function App() {
             </div>
           </div>
         </div>
-        {/* <label className="row">
+      </div>
+      {/* Cameras */}
+      <div className="panel cameras">
+        <h2>Cameras</h2>
+        <div className="camera-item">
+          <img src={placeholderImg} alt="" />
+          <div className="camera-info">
+            <h4>{cameraName} 1</h4>
+            <span>12pm-8pm</span>
+          </div>
+          <div className="toogle-button">
+            <button>On/OFF</button>
+          </div>
+        </div>
+        <hr />
+        <div className="camera-item">
+          <img src={placeholderImg} alt="" />
+          <div className="camera-info">
+            <h4>{cameraName} 2</h4>
+            <span>8pm-12pm</span>
+          </div>
+          <div className="toogle-button">
+            <button>On/OFF</button>
+          </div>
+        </div>
+      </div>
+      {/* Maybe change this  to weather? */}
+      {/* https://www.home-assistant.io/integrations/open_meteo/ */}
+      <div className="panel room-locks">
+        <h2>Rooms & Locks</h2>
+      </div>
+      {/* Features */}
+      <div className="panel features">
+        <label className="row">
           <span>Flash</span>
           <select
             value={flashLevel}
@@ -165,7 +198,7 @@ function App() {
           </select>
         </label>
 
-        <button onClick={snap}>Snapshot</button> */}
+        <button onClick={snap}>Snapshot</button>
       </div>
     </div>
   );

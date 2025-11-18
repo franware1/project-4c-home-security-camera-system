@@ -28,23 +28,23 @@ body {
   display: grid;
   grid-template-columns: repeat(6,1fr);
   grid-auto-rows: 100px;
-  gap: 16px;
   height: 100vh;
   padding: 16px;
 }
 
-
+/* Stream */
 .stream {
   grid-column: 1 / span 4;
   grid-row: 1 / span 5;
   display: flex;
   flex-direction: column;
+  padding: 8px;
 }
 
 .stream-box {
   width: 100%;
   position: relative;
-  border-radius: 10px;
+  border-radius: 20px;
   overflow: hidden;
   min-height: 240px;
   max-height: 500px;
@@ -78,6 +78,7 @@ body {
 }
 
 .panel{
+  margin: 8px;
   display: flex;
   flex-direction: column;
   border: 1px solid rgb(136, 136, 136);
@@ -112,6 +113,48 @@ body {
   margin: 0;
 }
 
+/* Camera */
+.cameras{
+  grid-column: 1 / span 1;
+  grid-row: 6 / span 3;
+}
+.cameras > hr{
+  margin: 0;
+}
+.camera-item{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 75px;
+}
+.camera-item img{
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+.camera-item .camera-info{
+  flex-grow: 1;
+  padding: 0 15px;
+}
+.camera-info > *{
+  margin: 0;
+}
+.camera-info > span{
+  color: var(--muted);
+}
+
+/* Rooms & Locks */
+.room-locks{
+  grid-column: 2 / span 3;
+  grid-row: 6 / span 3;
+}
+
+
+/* Features */
+.features{
+  grid-column: 5 / span 2;
+  grid-row: 6 / span 3;
+}
 
 .stream-header {
   display: flex;
@@ -142,7 +185,7 @@ body {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--bd);
-  border-radius: 8px;
+  border-radius: 20px;
   background: #fff;
 }
 
@@ -153,7 +196,7 @@ body {
 
 button {
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: 200px;
   border: 1px solid var(--bd);
   background: #fff;
   cursor: pointer;
@@ -196,7 +239,7 @@ button.danger {
   padding: 8px 16px;
   background: #fff;
   border: 1px solid var(--bd);
-  border-radius: 12px;
+  border-radius: 20px;
 }
 
 .location .small-icon{
