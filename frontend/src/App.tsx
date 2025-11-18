@@ -151,7 +151,15 @@ function App() {
             </div>
           </div>
         </div>
-        {/* <label className="row">
+      </div>
+      <div className="panel cameras">
+        <h2>Cameras</h2>
+      </div>
+      <div className="panel room-locks">
+        <h2>Rooms & Locks</h2>
+      </div>
+      <div className="panel features">
+        <label className="row">
           <span>Flash</span>
           <select
             value={flashLevel}
@@ -165,7 +173,7 @@ function App() {
           </select>
         </label>
 
-        <button onClick={snap}>Snapshot</button> */}
+        <button onClick={snap}>Snapshot</button>
       </div>
     </div>
   );
