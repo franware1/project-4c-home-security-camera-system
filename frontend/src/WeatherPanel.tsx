@@ -1,3 +1,5 @@
+import React from "react";
+import ReactDom from "react-dom";
 import { useEffect, useState } from "react";
 import type { WeatherData } from "./Weather";
 

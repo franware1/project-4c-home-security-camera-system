@@ -1,3 +1,5 @@
+import React from "react";
+import ReactDom from "react-dom";
 import { useCallback, useState, useEffect } from "react";
 import "./index.css";
 import { WeatherPanel } from "./WeatherPanel";
@@ -9,7 +11,7 @@ import locationIcon from "./assets/locationIcon.png";
 function App() {
 
   // Backend address, stored in localStorage
-  const backend = "http://localhost:8000";
+  const backend = "http://localhost:80";
 
   // Camera info
   const [cameraName, setCameraName] = useState<string>("Camera");
@@ -96,6 +98,7 @@ function App() {
 
   return (
     <div className="page">
+      
       {/* Stream Image */}
       <div className="stream">
         <div className="stream-box">
@@ -202,6 +205,7 @@ function App() {
 
         <button onClick={snap}>Snapshot</button>
       </div>
+
     </div>
   );
 }
