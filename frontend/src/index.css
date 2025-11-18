@@ -118,7 +118,30 @@ body {
   grid-column: 1 / span 1;
   grid-row: 6 / span 3;
 }
-
+.cameras > hr{
+  margin: 0;
+}
+.camera-item{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 75px;
+}
+.camera-item img{
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+.camera-item .camera-info{
+  flex-grow: 1;
+  padding: 0 15px;
+}
+.camera-info > *{
+  margin: 0;
+}
+.camera-info > span{
+  color: var(--muted);
+}
 
 /* Rooms & Locks */
 .room-locks{
