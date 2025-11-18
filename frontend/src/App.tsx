@@ -131,7 +131,7 @@ function App() {
 
       {/* Members */}
       <div className="panel members-activity">
-        <div className="members"> 
+        <div className="members">
           <h2>Members</h2>
           <div className="member-img">
             <img src="https://avatar.iran.liara.run/public" />
@@ -140,7 +140,17 @@ function App() {
             <img src="https://avatar.iran.liara.run/public/8" />
           </div>
         </div>
-
+        <hr />
+        <div className="activity">
+          <h2>Activity</h2>
+          <div className="activity-item">
+            <img src="https://avatar.iran.liara.run/public" />
+            <div>
+              <h4>Home</h4>
+              <span>0 Activities</span>
+            </div>
+          </div>
+        </div>
         {/* <label className="row">
           <span>Flash</span>
           <select
