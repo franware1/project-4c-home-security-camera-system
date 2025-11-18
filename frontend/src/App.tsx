@@ -1,10 +1,13 @@
 import { useCallback, useState, useEffect } from "react";
 import "./index.css";
+import { WeatherPanel } from "./WeatherPanel";
+
 
 import placeholderImg from "./assets/PhotoPlaceholder.jpg";
 import locationIcon from "./assets/locationIcon.png";
 
 function App() {
+
   // Backend address, stored in localStorage
   const backend = "http://localhost:8000";
 
@@ -32,8 +35,7 @@ function App() {
   const stopStream = () => setIsStreaming(false);
   const onStreamError = () => console.warn("Stream error.");
 
-  //Camera info
-
+  // Camera info
   useEffect(() => {
     if (!backend) return;
 
@@ -152,6 +154,7 @@ function App() {
           </div>
         </div>
       </div>
+
       {/* Cameras */}
       <div className="panel cameras">
         <h2>Cameras</h2>
@@ -177,11 +180,10 @@ function App() {
           </div>
         </div>
       </div>
-      {/* Maybe change this  to weather? */}
-      {/* https://www.home-assistant.io/integrations/open_meteo/ */}
-      <div className="panel room-locks">
-        <h2>Rooms & Locks</h2>
-      </div>
+
+      {/* Weather panel */}
+      <WeatherPanel />
+
       {/* Features */}
       <div className="panel features">
         <label className="row">

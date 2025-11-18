@@ -143,8 +143,8 @@ body {
   color: var(--muted);
 }
 
-/* Rooms & Locks */
-.room-locks{
+/* Weather */
+.weather{
   grid-column: 2 / span 3;
   grid-row: 6 / span 3;
 }
