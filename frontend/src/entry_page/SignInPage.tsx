@@ -2,15 +2,15 @@ import React from "react";
 import ReactDom from "react-dom";
 import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { submitForm } from "/actions.js";
 
-function SignInPage() {
-    const server = "http://localhost:80";
+export default function SignInPage() {
 
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
+    
 
-    useEffect(() => {
+    const [username, setUsername] = useState<string>();
+    const [password, setPassword] = useState<string>();
+
+    useEffect(() => { // use useEffect to sync with db
         
         if (username && password) {
             console.log("Username and password are valid");
@@ -27,7 +27,7 @@ function SignInPage() {
     });
 
   return (
-    <form onSubmit={login}>
+    <form action={SignIn}>
       <div>
         <label>Username:</label>
         <input

@@ -1,5 +1,5 @@
 import React from "react";
-import ReactDom from "react-dom";
+import ReactDOM from "react"
 import { useCallback, useState, useEffect } from "react";
 import "./index.css";
 import { WeatherPanel } from "./WeatherPanel";
