@@ -9,7 +9,7 @@ import locationIcon from "./assets/locationIcon.png";
 function App() {
 
   // Backend address, stored in localStorage
-  const backend = "http://localhost:8000";
+  const backend = "http://localhost:8888";
 
   // Camera info
   const [cameraName, setCameraName] = useState<string>("Camera");
