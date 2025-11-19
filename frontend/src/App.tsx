@@ -2,12 +2,10 @@ import { useCallback, useState, useEffect } from "react";
 import "./index.css";
 import { WeatherPanel } from "./WeatherPanel";
 
-
 import placeholderImg from "./assets/PhotoPlaceholder.jpg";
 import locationIcon from "./assets/locationIcon.png";
 
 function App() {
-
   // Backend address, stored in localStorage
   const backend = "http://localhost:8888";
 
@@ -99,6 +97,7 @@ function App() {
       {/* Stream Image */}
       <div className="stream">
         <div className="stream-box">
+          {/* Checks if connected to the stream if yes shows it */}
           {isStreaming && backend ? (
             <img
               id="cam"
@@ -107,14 +106,45 @@ function App() {
               onError={onStreamError}
             />
           ) : (
+            // Placeholder image when not streaming
             <img
               src={placeholderImg}
               alt="Placeholder"
               className="placeholder-image"
             />
           )}
+          {/* Left options on img */}
           <div className="img-options left">
-            <button>{cameraName}</button>
+            {/* Bootstrap dropdown */}
+            <div className="dropdown">
+              <button
+                className="btn btn-secondary dropdown-toggle"
+                type="button"
+                id="dropdownMenuButton1"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Dropdown button
+              </button>
+              <ul
+                className="dropdown-menu"
+                aria-labelledby="dropdownMenuButton1"
+              >
+                {/* Li gotta be chanded with a script getting all available cameras */}
+                <li>
+                  <a className="dropdown-item" href="#">
+                    Action
+                  </a>
+                </li>
+                <li>
+                  <a className="dropdown-item" href="#">
+                    Another action
+                  </a>
+                </li>
+              </ul>
+            </div>
+            {/* Display current camera information */}
+            {/* Gotta change when using multiple cameras */}
             <div className="camera-info">
               <h2>{cameraRoom}</h2>
               <span className="location">
@@ -123,6 +153,7 @@ function App() {
               </span>
             </div>
           </div>
+          {/* Simple button to turn on and off streaming */}
           <div className="img-options right">
             <button onClick={isStreaming ? stopStream : startStream}>
               {isStreaming ? "Stop Stream" : "Start Stream"}
@@ -164,8 +195,13 @@ function App() {
             <h4>{cameraName} 1</h4>
             <span>12pm-8pm</span>
           </div>
-          <div className="toogle-button">
-            <button>On/OFF</button>
+          <div className="form-check form-switch large-switch">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              role="switch"
+              id="flexSwitchCheckDefault"
+            />
           </div>
         </div>
         <hr />
@@ -175,8 +211,13 @@ function App() {
             <h4>{cameraName} 2</h4>
             <span>8pm-12pm</span>
           </div>
-          <div className="toogle-button">
-            <button>On/OFF</button>
+          <div className="form-check form-switch large-switch">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              role="switch"
+              id="flexSwitchCheckDefault"
+            />
           </div>
         </div>
       </div>
@@ -188,16 +229,50 @@ function App() {
       <div className="panel features">
         <label className="row">
           <span>Flash</span>
-          <select
-            value={flashLevel}
-            onChange={(e) =>
-              changeFlash(e.target.value as "off" | "low" | "high")
-            }
-          >
-            <option value="off">Off</option>
-            <option value="low">Low</option>
-            <option value="high">High</option>
-          </select>
+          <div className="dropdown">
+            <button
+              className="btn btn-secondary dropdown-toggle"
+              type="button"
+              id="flashDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              {flashLevel === "off"
+                ? "Off"
+                : flashLevel === "low"
+                ? "Low"
+                : "High"}
+            </button>
+
+            <ul className="dropdown-menu" aria-labelledby="flashDropdown">
+              <li>
+                <button
+                  className="dropdown-item"
+                  onClick={() => changeFlash("off")}
+                >
+                  Off
+                </button>
+              </li>
+
+              <li>
+                <button
+                  className="dropdown-item"
+                  onClick={() => changeFlash("low")}
+                >
+                  Low
+                </button>
+              </li>
+
+              <li>
+                <button
+                  className="dropdown-item"
+                  onClick={() => changeFlash("high")}
+                >
+                  High
+                </button>
+              </li>
+            </ul>
+          </div>
         </label>
 
         <button onClick={snap}>Snapshot</button>
