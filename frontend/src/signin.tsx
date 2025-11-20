@@ -1,9 +1,10 @@
 import React, { FormEvent, useEffect, useState } from "react";
 import ReactDom, { useFormStatus } from "react-dom";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom"; // use this to route user to different pages
-import { fetchUser } from "../../../backend/database.js"
+import { fetchUser, newUser } from "../../backend/db-config/database"
+import { Link } from "react-router-dom"
+import './index.css';
 
-export default function SignInPage() {
+export default function signin() {
 
     const [username, setUsername] = useState<string>("");
     const [password, setPassword] = useState<string>("");
@@ -15,7 +16,7 @@ export default function SignInPage() {
       console.log("Submitting, ", {username, password})
 
       'use server'
-      const user = fetchUser(username);
+      const user = fetchUser(username, password);
 
       if (!user) {
         console.log("User not found in database")
@@ -39,6 +40,7 @@ export default function SignInPage() {
             type="email"
             value={username}
             onChange={(user_typed_username) => setUsername(user_typed_username.target.value)} // inline function to change username on screen
+            required
           />
           </label>
 
@@ -48,6 +50,7 @@ export default function SignInPage() {
             type="password"
             value={password}
             onChange={(user_typed_password) => setPassword(user_typed_password.target.value)} // inline function to change password on screen
+            required
           />
           </label>
 
@@ -59,12 +62,11 @@ export default function SignInPage() {
         </div>
 
         <div className="forgot-password-link">
-          <Route path="/reset-password"/>
+          <Link to="/forgotpwd.tsx">Forgot Password?</Link>
         </div>
 
         <div className="signup-link">
-          Don't have an account?
-          <a href="/signup.tsx">Sign up</a>
+          Don't have an account? <Link to="/signup.tsx">Sign Up</Link>
         </div>
 
       </form>
