@@ -8,18 +8,49 @@ import https from 'https';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// ---------- Config ----------
+// ---------- Config helpers ----------
 function normalizeHost(v) {
   if (!v) return '';
   return v.startsWith('http://') || v.startsWith('https://') ? v : `http://${v}`;
 }
 
-const ESP_HOST_RAW = process.env.ESP_HOST || ''; // e.g. "192.168.1.42" or "192.168.1.42:81"
-const ESP_HOST = normalizeHost(ESP_HOST_RAW);    // ensures http:// prefix if missing
-const PORT = process.env.PORT || 4000;           // backend port
+// Define your cameras here (or via env vars)
+// You can add/remove entries as needed.
+const CAMERAS = [
+  {
+    id: 'front',                       // used in URLs: /api/cameras/front/...
+    label: 'Front Door',               // just a human-friendly label
+    baseUrl: normalizeHost(process.env.CAM_FRONT || 'http://192.168.12.181'),
+  },
+  {
+    id: 'back',
+    label: 'Back Yard',
+    baseUrl: normalizeHost(process.env.CAM_BACK || 'http://192.168.12.181'),
+  },
+  // Add more cameras if you want:
+  // {
+  //   id: 'garage',
+  //   label: 'Garage',
+  //   baseUrl: normalizeHost(process.env.CAM_GARAGE || 'http://192.168.1.53'),
+  // },
+].filter(cam => !!cam.baseUrl); // drop any empty ones
 
-if (!ESP_HOST) {
-  console.warn('\n⚠️  No ESP_HOST set in .env – backend will start, but ESP routes will fail.\n');
+const PORT = process.env.PORT || 4000;
+
+// Basic sanity log
+if (CAMERAS.length === 0) {
+  console.warn('\n⚠️  No cameras configured. Set CAM_FRONT / CAM_BACK env vars or edit CAMERAS array.\n');
+} else {
+  console.log('\n📹 Configured cameras:');
+  CAMERAS.forEach(cam => {
+    console.log(`  - ${cam.id}: ${cam.baseUrl} (${cam.label})`);
+  });
+  console.log('');
+}
+
+// Helper to find a camera by id
+function findCamera(id) {
+  return CAMERAS.find(c => c.id === id);
 }
 
 // Resolve __dirname in ES module
@@ -33,53 +64,75 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 
-// Helper to choose http/https based on ESP_HOST
+// Helper to choose http/https based on baseUrl
 function getHttpClient(url) {
   return url.startsWith('https://') ? https : http;
 }
 
-// Generic proxy helper for GET requests
-function proxyGet(req, res, targetPath) {
-  if (!ESP_HOST) {
-    return res.status(500).json({ error: 'ESP_HOST is not configured on the server' });
+// Generic proxy helper for GET requests (per camera)
+function proxyGetFromCamera(camera, res, targetPath) {
+  if (!camera || !camera.baseUrl) {
+    return res.status(500).json({ error: 'Camera is not configured on the server' });
   }
 
-  const url = `${ESP_HOST}${targetPath}`;
+  const url = `${camera.baseUrl}${targetPath}`;
   const client = getHttpClient(url);
 
   const espReq = client.get(url, espRes => {
-    // Forward original status and headers (especially important for stream / images)
+    // Forward original status and headers (important for MJPEG / images)
     res.writeHead(espRes.statusCode || 500, espRes.headers);
     espRes.pipe(res);
   });
 
   espReq.on('error', err => {
-    console.error(`Error proxying to ESP (${url}):`, err.message);
+    console.error(`Error proxying to ESP (${camera.id} @ ${url}):`, err.message);
     if (!res.headersSent) {
-      res.status(502).json({ error: 'Failed to reach ESP32', details: err.message });
+      res.status(502).json({ error: 'Failed to reach ESP32 camera', details: err.message });
     }
   });
 }
 
 // ---------- API Routes ----------
 
-// Stream video from ESP -> /api/stream
-app.get('/api/stream', (req, res) => {
-  proxyGet(req, res, '/stream');
+// List all configured cameras (metadata only)
+app.get('/api/cameras', (req, res) => {
+  res.json(
+    CAMERAS.map(cam => ({
+      id: cam.id,
+      label: cam.label,
+      baseUrl: cam.baseUrl, // you can omit this if you don’t want to expose LAN IPs
+    }))
+  );
 });
 
-// Capture single frame -> /api/capture
-app.get('/api/capture', (req, res) => {
-  proxyGet(req, res, '/capture');
+// Middleware: ensure camera exists
+function cameraMiddleware(req, res, next) {
+  const { id } = req.params;
+  const camera = findCamera(id);
+  if (!camera) {
+    return res.status(404).json({ error: `Unknown camera id "${id}"` });
+  }
+  req.camera = camera;
+  next();
+}
+
+// Stream video from specific camera -> /api/cameras/:id/stream
+app.get('/api/cameras/:id/stream', cameraMiddleware, (req, res) => {
+  proxyGetFromCamera(req.camera, res, '/stream');
 });
 
-// Get camera info (name, etc.) -> /api/camera-info
-app.get('/api/camera-info', (req, res) => {
-  proxyGet(req, res, '/info');
+// Capture single frame -> /api/cameras/:id/capture
+app.get('/api/cameras/:id/capture', cameraMiddleware, (req, res) => {
+  proxyGetFromCamera(req.camera, res, '/capture');
 });
 
-// Control flash (expects ?pwm=0–255) -> /api/flash?pwm=...
-app.get('/api/flash', (req, res) => {
+// Get camera info (name, room, address) -> /api/cameras/:id/info
+app.get('/api/cameras/:id/info', cameraMiddleware, (req, res) => {
+  proxyGetFromCamera(req.camera, res, '/info');
+});
+
+// Control flash (expects ?pwm=0–255) -> /api/cameras/:id/flash?pwm=...
+app.get('/api/cameras/:id/flash', cameraMiddleware, (req, res) => {
   const { pwm } = req.query;
 
   if (pwm === undefined) {
@@ -87,14 +140,27 @@ app.get('/api/flash', (req, res) => {
   }
 
   const targetPath = `/flash?pwm=${encodeURIComponent(pwm)}`;
-  proxyGet(req, res, targetPath);
+  proxyGetFromCamera(req.camera, res, targetPath);
+});
+
+// Proxy config changes to ESP’s /config
+// You can pass any query params supported by the ESP, e.g.:
+//   /api/cameras/front/config?name=LivingRoom&room=Living%20Room&addr=123%20Main
+app.get('/api/cameras/:id/config', cameraMiddleware, (req, res) => {
+  const search = new URLSearchParams(req.query).toString();
+  const targetPath = search ? `/config?${search}` : '/config';
+  proxyGetFromCamera(req.camera, res, targetPath);
 });
 
 // Optional: simple health check (does NOT call ESP)
 app.get('/api/health', (req, res) => {
   res.json({
     ok: true,
-    espHost: ESP_HOST_RAW || null,
+    cameras: CAMERAS.map(cam => ({
+      id: cam.id,
+      label: cam.label,
+      baseUrl: cam.baseUrl,
+    })),
   });
 });
 
@@ -112,5 +178,13 @@ app.use((req, res) => {
 // ---------- Start ----------
 app.listen(PORT, () => {
   console.log(`\n✅ Backend listening:\nhttp://localhost:${PORT}`);
-  console.log(`✅ ESP32 target:\n${ESP_HOST}\n`);
+  if (CAMERAS.length) {
+    console.log('✅ Cameras:');
+    CAMERAS.forEach(cam => {
+      console.log(`   - ${cam.id}: ${cam.baseUrl} (${cam.label})`);
+    });
+  } else {
+    console.log('⚠️  No cameras configured.');
+  }
+  console.log('');
 });

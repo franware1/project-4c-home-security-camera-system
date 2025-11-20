@@ -5,6 +5,8 @@
  *     GET /stream        -> MJPEG multipart stream (non-blocking)
  *     GET /flash?pwm=0..255
  *     GET /status        -> JSON
+ *     GET /info          -> JSON (name, room, address)
+ *     GET /config        -> update name/room/address via query params
  *     GET /debug         -> JSON with call counters
  *******************************************************/
 
@@ -12,6 +14,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include "esp_camera.h"
+#include <Preferences.h>
 
 // ---- Secrets (put in config_secrets.h; do NOT commit) ----
 //   #pragma once
@@ -56,11 +59,12 @@
 #define LED_FLASH_LEDC_BITS 8
 
 WebServer server(80);
+Preferences prefs;
 
-//Camera Name
-const char* CAMERA_NAME = "Esp32Cam-1";
-const char* CAMERA_ROOM = "Outside View";
-const char* CAMERA_ADDRESS = "123 Main Street";
+// ---- Camera config (user-editable, stored in NVS) ----
+String g_camName = "Default_Name";
+String g_camRoom = "Default_Room";
+String g_camAddress = "Default_Address";
 
 // ---- Debug counters ----
 uint32_t g_captureCalls = 0;
@@ -75,8 +79,33 @@ bool streamingActive = false;
 uint32_t lastFrameMs = 0;
 const uint32_t STREAM_INTERVAL_MS = 10;  // min delay between frames
 
+// ---------- Camera config load/save (NVS) ----------
+void loadCameraConfig() {
+  prefs.begin("camcfg", true);  // read-only
+  g_camName = prefs.getString("name", "Default_Name");
+  g_camRoom = prefs.getString("room", "Default_Room");
+  g_camAddress = prefs.getString("address", "Default_Address");
 
+  prefs.end();
 
+  Serial.println("[CFG] Loaded camera config:");
+  Serial.println("      name: " + g_camName);
+  Serial.println("      room: " + g_camRoom);
+  Serial.println("      addr: " + g_camAddress);
+}
+
+void saveCameraConfig() {
+  prefs.begin("camcfg", false);  // read/write
+  prefs.putString("name", g_camName);
+  prefs.putString("room", g_camRoom);
+  prefs.putString("address", g_camAddress);
+  prefs.end();
+
+  Serial.println("[CFG] Saved camera config:");
+  Serial.println("      name: " + g_camName);
+  Serial.println("      room: " + g_camRoom);
+  Serial.println("      addr: " + g_camAddress);
+}
 
 // ---------- Camera init ----------
 bool initCamera() {
@@ -171,16 +200,48 @@ void handleCapture() {
   Serial.printf("[CAPTURE] wrote %u bytes\n", (unsigned)w);
 }
 
-//Handle Camera info
+// Camera info (JSON)
 void handleCameraInfo() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
   String json = "{";
-  json += "\"name\":\"" + String(CAMERA_NAME) + "\",";
-  json += "\"room\":\"" + String(CAMERA_ROOM) + "\",";
-  json += "\"address\":\"" + String(CAMERA_ADDRESS) + "\"";
+  json += "\"name\":\"" + g_camName + "\",";
+  json += "\"room\":\"" + g_camRoom + "\",";
+  json += "\"address\":\"" + g_camAddress + "\"";
   json += "}";
   server.send(200, "application/json", json);
 }
 
+// Camera config update (via query params)
+//   /config?name=FrontDoor&room=Porch&addr=123%20Main
+void handleSetCameraConfig() {
+  Serial.println("[CFG] Update requested");
+
+  bool changed = false;
+
+  if (server.hasArg("name")) {
+    g_camName = server.arg("name");
+    changed = true;
+  }
+
+  if (server.hasArg("room")) {
+    g_camRoom = server.arg("room");
+    changed = true;
+  }
+
+  if (server.hasArg("addr")) {  // short alias
+    g_camAddress = server.arg("addr");
+    changed = true;
+  } else if (server.hasArg("address")) {  // or full name
+    g_camAddress = server.arg("address");
+    changed = true;
+  }
+
+  if (changed) {
+    saveCameraConfig();
+  }
+
+  handleCameraInfo();  // respond with current config
+}
 
 // Non-blocking stream: set up client + headers; frames sent in loop()
 void handleStream() {
@@ -231,6 +292,7 @@ void handleFlash() {
   int pwm = constrain(server.arg("pwm").toInt(), 0, 255);
   setFlashPWM(pwm);
   Serial.printf("[FLASH] pwm=%d\n", pwm);
+  server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "text/plain", String("flash=") + pwm);
 }
 
@@ -240,6 +302,7 @@ void handleStatus() {
   Serial.printf("[STATUS] #%u called at %lu ms\n", g_statusCalls, t0);
 
   String j = String("{\"ip\":\"") + WiFi.localIP().toString() + "\",\"heap\":" + ESP.getFreeHeap() + ",\"psram\":" + ESP.getPsramSize() + "}";
+  server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "application/json", j);
 }
 
@@ -256,6 +319,7 @@ void handleDebug() {
   j += ",\"status\":" + String(g_statusCalls);
   j += ",\"debug\":" + String(g_debugCalls);
   j += "}";
+  server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "application/json", j);
 }
 
@@ -264,7 +328,8 @@ void connectWiFi() {
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);
-  WiFi.setHostname("esp32cam");
+
+  WiFi.setHostname(g_camName.c_str());  // use dynamic camera name as hostname
   WiFi.setTxPower(WIFI_POWER_19_5dBm);
 
   Serial.println("[WIFI] Connecting...");
@@ -343,6 +408,8 @@ void setup() {
 
   Serial.println("\n=== ESP32-CAM Home Security Firmware (NON-BLOCKING STREAM) ===");
 
+  loadCameraConfig();  // load name/room/address before WiFi
+
   if (!initCamera()) {
     Serial.println("Camera init failed! Halting.");
     while (true) { delay(1000); }
@@ -357,6 +424,7 @@ void setup() {
   server.on("/flash", HTTP_GET, handleFlash);
   server.on("/status", HTTP_GET, handleStatus);
   server.on("/info", HTTP_GET, handleCameraInfo);
+  server.on("/config", HTTP_GET, handleSetCameraConfig);
   server.on("/debug", HTTP_GET, handleDebug);
 
   server.onNotFound([]() {
@@ -366,7 +434,7 @@ void setup() {
 
   server.begin();
   Serial.println("[HTTP] Server started.");
-  Serial.println("Try: /capture, /stream, /flash, /status, /debug");
+  Serial.println("Try: /capture, /stream, /flash, /status, /info, /config, /debug");
 }
 
 void loop() {
