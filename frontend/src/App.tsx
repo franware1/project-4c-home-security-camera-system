@@ -20,7 +20,6 @@ function App() {
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
 
   // Per-camera enabled/disabled (toggled in Cameras panel)
-  // If a camera's value is false => treated as "off"
   const [enabledCameras, setEnabledCameras] = useState<Record<string, boolean>>(
     {}
   );
@@ -30,8 +29,9 @@ function App() {
   const [cameraRoom, setCameraRoom] = useState<string>("Home View");
   const [cameraAddress, setCameraAddress] = useState<string>("Street Address");
 
-  // Whether streaming is on
+  // Whether streaming / recording is on
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   // Flash level
   const [flashLevel, setFlashLevel] = useState<"off" | "low" | "high">("off");
@@ -155,6 +155,28 @@ function App() {
     [selectedCameraId, enabledCameras]
   );
 
+  // Recording (for selected camera)
+  const toggleRecording = async () => {
+    if (!selectedCameraId || enabledCameras[selectedCameraId] === false) {
+      alert("No enabled camera selected");
+      return;
+    }
+
+    const action = isRecording ? "stop" : "start";
+    const url = buildUrl(`/api/cameras/${selectedCameraId}/record/${action}`);
+
+    try {
+      const res = await fetch(url, { method: "POST" });
+      if (!res.ok) {
+        throw new Error(`Failed to ${action} recording`);
+      }
+      setIsRecording(!isRecording);
+    } catch (err) {
+      console.error(err);
+      alert(`Could not ${action} recording.`);
+    }
+  };
+
   // Flash logic
   const levelToPwm = (level: "off" | "low" | "high") => {
     if (level === "off") return 0;
@@ -194,8 +216,9 @@ function App() {
 
       // If we just turned OFF the currently selected camera
       if (!newEnabled && selectedCameraId === id) {
-        // stop streaming
+        // stop streaming & recording
         setIsStreaming(false);
+        setIsRecording(false);
 
         // try to pick another enabled camera
         const fallback = cameras.find(
@@ -269,8 +292,7 @@ function App() {
                       type="button"
                       onClick={() => {
                         setSelectedCameraId(cam.id);
-                        // keep streaming state as-is; if isStreaming is true,
-                        // img src will swap to new camera
+                        // if isStreaming is true, img src will swap to new camera
                       }}
                     >
                       {cam.label || cam.id}
@@ -282,6 +304,7 @@ function App() {
 
             {/* Display current camera information */}
             <div className="camera-info">
+              <h3>{cameraName}</h3>
               <h2>{cameraRoom}</h2>
               <span className="location">
                 <img src={locationIcon} className="small-icon" alt="Location" />{" "}
@@ -419,6 +442,14 @@ function App() {
         </label>
 
         <button onClick={snap}>Snapshot</button>
+        <button
+          onClick={toggleRecording}
+          disabled={
+            !selectedCameraId || enabledCameras[selectedCameraId] === false
+          }
+        >
+          {isRecording ? "Stop Recording" : "Record"}
+        </button>
       </div>
     </div>
   );

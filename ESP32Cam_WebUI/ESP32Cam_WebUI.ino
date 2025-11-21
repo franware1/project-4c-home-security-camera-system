@@ -1,8 +1,8 @@
 /*******************************************************
- * ESP32-CAM (AI-Thinker): Minimal API firmware (non-blocking stream)
+ * ESP32-CAM (AI-Thinker): Minimal API firmware (multi-client, non-blocking stream)
  * - Endpoints:
  *     GET /capture       -> single JPEG
- *     GET /stream        -> MJPEG multipart stream (non-blocking)
+ *     GET /stream        -> MJPEG multipart stream (multi-client)
  *     GET /flash?pwm=0..255
  *     GET /status        -> JSON
  *     GET /info          -> JSON (name, room, address)
@@ -62,8 +62,8 @@ WebServer server(80);
 Preferences prefs;
 
 // ---- Camera config (user-editable, stored in NVS) ----
-String g_camName = "Default_Name";
-String g_camRoom = "Default_Room";
+String g_camName    = "Default_Name";
+String g_camRoom    = "Default_Room";
 String g_camAddress = "Default_Address";
 
 // ---- Debug counters ----
@@ -73,19 +73,24 @@ uint32_t g_flashCalls = 0;
 uint32_t g_statusCalls = 0;
 uint32_t g_debugCalls = 0;
 
-// ---- Streaming state (non-blocking) ----
-WiFiClient streamClient;
-bool streamingActive = false;
-uint32_t lastFrameMs = 0;
-const uint32_t STREAM_INTERVAL_MS = 10;  // min delay between frames
+// ---- Streaming state (multi-client, non-blocking) ----
+const uint8_t MAX_STREAM_CLIENTS = 3;   // adjust if you like (2–3 is safe)
+const uint32_t STREAM_INTERVAL_MS = 50; // delay between frames (higher = lighter load)
+
+struct StreamClient {
+  WiFiClient client;
+  bool active;
+};
+
+StreamClient g_streamClients[MAX_STREAM_CLIENTS];
+uint32_t g_lastFrameMs = 0;
 
 // ---------- Camera config load/save (NVS) ----------
 void loadCameraConfig() {
   prefs.begin("camcfg", true);  // read-only
-  g_camName = prefs.getString("name", "Default_Name");
-  g_camRoom = prefs.getString("room", "Default_Room");
+  g_camName    = prefs.getString("name",    "Default_Name");
+  g_camRoom    = prefs.getString("room",    "Default_Room");
   g_camAddress = prefs.getString("address", "Default_Address");
-
   prefs.end();
 
   Serial.println("[CFG] Loaded camera config:");
@@ -95,9 +100,9 @@ void loadCameraConfig() {
 }
 
 void saveCameraConfig() {
-  prefs.begin("camcfg", false);  // read/write
-  prefs.putString("name", g_camName);
-  prefs.putString("room", g_camRoom);
+  prefs.begin("camcfg", false); // read/write
+  prefs.putString("name",    g_camName);
+  prefs.putString("room",    g_camRoom);
   prefs.putString("address", g_camAddress);
   prefs.end();
 
@@ -174,6 +179,36 @@ void setFlashPWM(uint8_t duty) {
 #endif
 }
 
+// ---------- Utility: streaming clients ----------
+
+void initStreamClients() {
+  for (uint8_t i = 0; i < MAX_STREAM_CLIENTS; i++) {
+    g_streamClients[i].active = false;
+  }
+}
+
+// add or replace a client in our small pool
+void addStreamClient(WiFiClient &&c) {
+  // Reuse any inactive or disconnected slot
+  for (uint8_t i = 0; i < MAX_STREAM_CLIENTS; i++) {
+    if (!g_streamClients[i].active || !g_streamClients[i].client.connected()) {
+      g_streamClients[i].client.stop();
+      g_streamClients[i].client = std::move(c);
+      g_streamClients[i].active = true;
+      IPAddress remote = g_streamClients[i].client.remoteIP();
+      Serial.printf("[STREAM] New client in slot %u from %s\n",
+                    i, remote.toString().c_str());
+      return;
+    }
+  }
+
+  // If we reach here, pool is full. Drop the oldest (slot 0).
+  Serial.println("[STREAM] Client pool full, replacing slot 0");
+  g_streamClients[0].client.stop();
+  g_streamClients[0].client = std::move(c);
+  g_streamClients[0].active = true;
+}
+
 // ---------- Handlers ----------
 
 void handleCapture() {
@@ -204,8 +239,8 @@ void handleCapture() {
 void handleCameraInfo() {
   server.sendHeader("Access-Control-Allow-Origin", "*");
   String json = "{";
-  json += "\"name\":\"" + g_camName + "\",";
-  json += "\"room\":\"" + g_camRoom + "\",";
+  json += "\"name\":\""    + g_camName    + "\",";
+  json += "\"room\":\""    + g_camRoom    + "\",";
   json += "\"address\":\"" + g_camAddress + "\"";
   json += "}";
   server.send(200, "application/json", json);
@@ -228,10 +263,10 @@ void handleSetCameraConfig() {
     changed = true;
   }
 
-  if (server.hasArg("addr")) {  // short alias
+  if (server.hasArg("addr")) {           // short alias
     g_camAddress = server.arg("addr");
     changed = true;
-  } else if (server.hasArg("address")) {  // or full name
+  } else if (server.hasArg("address")) { // or full name
     g_camAddress = server.arg("address");
     changed = true;
   }
@@ -243,40 +278,31 @@ void handleSetCameraConfig() {
   handleCameraInfo();  // respond with current config
 }
 
-// Non-blocking stream: set up client + headers; frames sent in loop()
+// Multi-client stream: register client, headers now, frames in loop()
 void handleStream() {
   g_streamSessions++;
   uint32_t tStart = millis();
 
-  // If an old stream is active, close it
-  if (streamingActive && streamClient && streamClient.connected()) {
-    Serial.println("[STREAM] Replacing existing stream client");
-    streamClient.stop();
-  }
-
-  streamClient = server.client();
-  if (!streamClient) {
+  WiFiClient c = server.client();
+  if (!c || !c.connected()) {
     Serial.println("[STREAM] client invalid");
     return;
   }
 
-  streamClient.setNoDelay(true);
+  c.setNoDelay(true);
 
-  streamClient.print(
+  c.print(
     "HTTP/1.1 200 OK\r\n"
     "Content-Type: multipart/x-mixed-replace; boundary=frame\r\n"
     "Cache-Control: no-cache, no-store, must-revalidate\r\n"
     "Pragma: no-cache\r\n"
     "Connection: keep-alive\r\n\r\n");
 
-  streamingActive = true;
-  lastFrameMs = 0;
+  addStreamClient(std::move(c));
+  g_lastFrameMs = 0;
 
-  IPAddress remote = streamClient.remoteIP();
-  Serial.printf("[STREAM] Session #%u started from %s at %lu ms\n",
-                g_streamSessions,
-                remote.toString().c_str(),
-                tStart);
+  Serial.printf("[STREAM] Session #%u started at %lu ms\n",
+                g_streamSessions, tStart);
 }
 
 void handleFlash() {
@@ -301,7 +327,9 @@ void handleStatus() {
   uint32_t t0 = millis();
   Serial.printf("[STATUS] #%u called at %lu ms\n", g_statusCalls, t0);
 
-  String j = String("{\"ip\":\"") + WiFi.localIP().toString() + "\",\"heap\":" + ESP.getFreeHeap() + ",\"psram\":" + ESP.getPsramSize() + "}";
+  String j = String("{\"ip\":\"") + WiFi.localIP().toString() +
+             "\",\"heap\":" + ESP.getFreeHeap() +
+             ",\"psram\":" + ESP.getPsramSize() + "}";
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "application/json", j);
 }
@@ -358,21 +386,21 @@ void connectWiFi() {
 
 // ---------- Streaming frame sender (called from loop) ----------
 void pumpStreamFrame() {
-  if (!streamingActive) return;
-  if (!streamClient || !streamClient.connected()) {
-    if (streamingActive) {
-      Serial.println("[STREAM] client disconnected, stopping stream");
+  // Check if we have any active clients
+  bool anyActive = false;
+  for (uint8_t i = 0; i < MAX_STREAM_CLIENTS; i++) {
+    if (g_streamClients[i].active && g_streamClients[i].client.connected()) {
+      anyActive = true;
+      break;
     }
-    streamingActive = false;
-    if (streamClient) streamClient.stop();
-    return;
   }
+  if (!anyActive) return;
 
   uint32_t now = millis();
-  if (now - lastFrameMs < STREAM_INTERVAL_MS) {
+  if (now - g_lastFrameMs < STREAM_INTERVAL_MS) {
     return;  // too soon, wait a bit
   }
-  lastFrameMs = now;
+  g_lastFrameMs = now;
 
   camera_fb_t* fb = esp_camera_fb_get();
   if (!fb) {
@@ -380,25 +408,38 @@ void pumpStreamFrame() {
     return;
   }
 
-  // Write multipart frame
-  streamClient.print("--frame\r\n");
-  streamClient.print("Content-Type: image/jpeg\r\n");
-  streamClient.print("Content-Length: ");
-  streamClient.print(fb->len);
-  streamClient.print("\r\n\r\n");
+  // Send the same frame to all active clients
+  for (uint8_t i = 0; i < MAX_STREAM_CLIENTS; i++) {
+    if (!g_streamClients[i].active) continue;
 
-  size_t w = streamClient.write(fb->buf, fb->len);
-  esp_camera_fb_return(fb);
+    WiFiClient &c = g_streamClients[i].client;
+    if (!c.connected()) {
+      Serial.printf("[STREAM] slot %u disconnected, cleaning up\n", i);
+      c.stop();
+      g_streamClients[i].active = false;
+      continue;
+    }
 
-  if (w != fb->len) {
-    Serial.printf("[STREAM] short write: wrote %u of %u, closing\n",
-                  (unsigned)w, (unsigned)fb->len);
-    streamClient.stop();
-    streamingActive = false;
-    return;
+    c.print("--frame\r\n");
+    c.print("Content-Type: image/jpeg\r\n");
+    c.print("Content-Length: ");
+    c.print(fb->len);
+    c.print("\r\n\r\n");
+
+    size_t w = c.write(fb->buf, fb->len);
+
+    if (w != fb->len) {
+      Serial.printf("[STREAM] slot %u short write: wrote %u of %u, closing\n",
+                    i, (unsigned)w, (unsigned)fb->len);
+      c.stop();
+      g_streamClients[i].active = false;
+      continue;
+    }
+
+    c.print("\r\n");
   }
 
-  streamClient.print("\r\n");
+  esp_camera_fb_return(fb);
 }
 
 // ---------- Setup / Loop ----------
@@ -406,7 +447,7 @@ void setup() {
   Serial.begin(115200);
   delay(200);
 
-  Serial.println("\n=== ESP32-CAM Home Security Firmware (NON-BLOCKING STREAM) ===");
+  Serial.println("\n=== ESP32-CAM Home Security Firmware (MULTI-CLIENT STREAM) ===");
 
   loadCameraConfig();  // load name/room/address before WiFi
 
@@ -416,16 +457,17 @@ void setup() {
   }
 
   initFlashPWM();
+  initStreamClients();
   connectWiFi();
 
   // Routes
   server.on("/capture", HTTP_GET, handleCapture);
-  server.on("/stream", HTTP_GET, handleStream);
-  server.on("/flash", HTTP_GET, handleFlash);
-  server.on("/status", HTTP_GET, handleStatus);
-  server.on("/info", HTTP_GET, handleCameraInfo);
-  server.on("/config", HTTP_GET, handleSetCameraConfig);
-  server.on("/debug", HTTP_GET, handleDebug);
+  server.on("/stream",  HTTP_GET, handleStream);
+  server.on("/flash",   HTTP_GET, handleFlash);
+  server.on("/status",  HTTP_GET, handleStatus);
+  server.on("/info",    HTTP_GET, handleCameraInfo);
+  server.on("/config",  HTTP_GET, handleSetCameraConfig);
+  server.on("/debug",   HTTP_GET, handleDebug);
 
   server.onNotFound([]() {
     Serial.printf("[404] %s\n", server.uri().c_str());
@@ -439,5 +481,5 @@ void setup() {
 
 void loop() {
   server.handleClient();  // handle new HTTP requests
-  pumpStreamFrame();      // send one frame if streaming
+  pumpStreamFrame();      // send one frame to all active clients (if any)
 }
