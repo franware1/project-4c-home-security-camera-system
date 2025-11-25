@@ -3,7 +3,7 @@ import ReactDOM from "react"
 import { useCallback, useState, useEffect } from "react";
 import "./index.css";
 import { WeatherPanel } from "./WeatherPanel";
-
+import { CookiesProvider, useCookies } from 'react-cookie';
 
 import placeholderImg from "./assets/PhotoPlaceholder.jpg";
 import locationIcon from "./assets/locationIcon.png";

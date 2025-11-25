@@ -7,6 +7,7 @@ import http from 'http';
 import https from 'https';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import cookieParser from 'cookie-parser'
 
 
 // ---------- Config ----------
@@ -34,6 +35,19 @@ const app = express();
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
+app.use(cookieParser)
+app.use(
+  session({
+    resave: false,
+    saveUninitialized: false,
+    secret: "session",
+    cookie: {
+      maxAge: 1000 * 60 * 60,
+      sameSite: "none",
+      secure: false,
+    }
+  })
+)
 
 // Helper to choose http/https based on ESP_HOST
 function getHttpClient(url) {

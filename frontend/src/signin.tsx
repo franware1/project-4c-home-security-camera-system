@@ -1,46 +1,69 @@
 import React, { FormEvent, useEffect, useState } from "react";
 import ReactDom, { useFormStatus } from "react-dom";
 import { fetchUser, newUser } from "../../backend/db-config/database"
-import { Link } from "react-router-dom"
-import './index.css';
+import { Navigate, Outlet, Link } from "react-router-dom"
+import './signin.css';
 
-export default function signin() {
+export default function SignIn() {
 
-    const [username, setUsername] = useState<string>("");
-    const [password, setPassword] = useState<string>("");
+    const backend = "http://localhost:8080"
 
-    function processUser(userSignInAttempt: React.FormEvent<HTMLFormElement>) {
-      userSignInAttempt.preventDefault(); // prevent page reload on form submit
+    // use react states to set and get username and password
+    const [username, setUsername] = useState<string>('')
+    const [password, setPassword] = useState<string>('')
+    let usernameExists = {'token':false}
+    let passwordAuth = {'token':false}
 
-      console.log("User sign-in attempt")
-      console.log("Submitting, ", {username, password})
+    // error codes
 
-      'use server'
-      const user = fetchUser(username, password);
+    const [failedAttemptState, setAttempt] = useState(false)
+    const failedAttemptMessage = 'Password not recognized for this username'
 
-      if (!user) {
-        console.log("User not found in database")
+    const showElement = () => {
+      setAttempt(true); 
+    }
+
+    const handleSignIn = async (e: React.FormEvent) => {
+      if (!backend) return;
+      e.preventDefault() // prevents it from reloading the page
+
+      const fetchAuth = async () => {
+        // (signiuapp.post) authenticate the form input
+        try {
+          const response = await fetch(`${backend}/api/signin`, {
+            method: "POST",
+            headers: { "Content-Type": ""},
+            body: JSON.stringify({username, password}), // send this to backend
+            credentials: "include",
+        });
+
+        const authData = await response.json() // parses through the response object as json
+
+        if (!response.ok) { // if response status code is not 200
+          alert(authData.error || "Login Failed")
+          return
+        }
+
+        }
+        catch (error) {
+          console.error("No user found", error)
+        }
       }
-      else {
-        console.log("User found in database:", user)
-      }
-
-    } 
-
+    }
     
   return (
     <div className='signin-container'>
-      <form className="signin-form" onSubmit={processUser}>
+      <form className="signin-form" onSubmit={handleSignIn}>
 
         <div className="form-box">
           <label>
-            Email address:
+            Username:
           <input
-            id="email"
-            type="email"
+            id="username"
+            type="username"
             value={username}
             onChange={(user_typed_username) => setUsername(user_typed_username.target.value)} // inline function to change username on screen
-            required
+            required // require username for form submission
           />
           </label>
 
@@ -50,7 +73,7 @@ export default function signin() {
             type="password"
             value={password}
             onChange={(user_typed_password) => setPassword(user_typed_password.target.value)} // inline function to change password on screen
-            required
+            required // require password for form submission
           />
           </label>
 
@@ -70,6 +93,10 @@ export default function signin() {
         </div>
 
       </form>
+
+      if (!usernameExists) <Navigate to='/signin?usernameExists=false'/> {/* if username doesn't exist then appear username doesn't exist message */}
+      passwordAuth ? <Outlet/> : <Navigate to='/signin?passwordAuth=false'/> {/* if password doesn't exist then appear password is incorrect for given username message */}
+
     </div>
   );
 }
