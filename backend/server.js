@@ -3,10 +3,10 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import http from 'http';
-import https from 'https';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import http from 'node:http';
+import https from 'node:https';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import cookieParser from 'cookie-parser'
 
 

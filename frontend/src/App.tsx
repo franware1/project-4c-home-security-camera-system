@@ -1,7 +1,5 @@
-import React from "react";
-import ReactDOM from "react"
 import { useCallback, useState, useEffect } from "react";
-import "./index.css";
+import "./styles/index.css";
 import { WeatherPanel } from "./WeatherPanel";
 import { CookiesProvider, useCookies } from 'react-cookie';
 

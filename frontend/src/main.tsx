@@ -1,12 +1,11 @@
-import React from 'react';
-import { StrictMode } from 'react';
+import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Navigate, BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import './index.css';
+import './styles/index.css';
 import App from './App';
 import SignIn from './signin';
-import RequireAuth from './require-auth'
 import { CookiesProvider, useCookies } from 'react-cookie'
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -20,9 +19,9 @@ createRoot(document.getElementById('root')!).render(
         <Route
           path="/App"
           element={
-            <RequireAuth>
+            <CookiesProvider defaultSetOptions={{path: '/'}}>
               <App />
-            </RequireAuth>
+            </CookiesProvider>
           }
         />
       </Routes>

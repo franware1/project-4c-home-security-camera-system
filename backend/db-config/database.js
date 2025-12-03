@@ -40,7 +40,7 @@ signiuapp.use(
     origin: FRONTEND_ORIGIN,
     credentials: true,
   })
-) // use cors
+) // use cors to say that this frontend is safe to access the backend
 
 // sign in if entered email and password are valid
 // returns ... if password is incorrect but email exists
@@ -57,6 +57,8 @@ signiuapp.post('/api/signin', (request, response) => {
   const passwordAuth = bcrypt(password, user.pwd)
   if (!passwordAuth) {return response.status(401).json({error: "Invalid password"})}
   else {return response.status(200).send('User authenticated!')}
+
+  
 
 })
 

@@ -2,7 +2,7 @@ import React, { FormEvent, useEffect, useState } from "react";
 import ReactDom, { useFormStatus } from "react-dom";
 import { fetchUser, newUser } from "../../backend/db-config/database"
 import { Navigate, Outlet, Link } from "react-router-dom"
-import './signin.css';
+import './styles/signin.css';
 
 export default function SignIn() {
 
@@ -24,7 +24,7 @@ export default function SignIn() {
     }
 
     const handleSignIn = async (e: React.FormEvent) => {
-      if (!backend) return;
+      if (!backend) return
       e.preventDefault() // prevents it from reloading the page
 
       const fetchAuth = async () => {
@@ -32,10 +32,12 @@ export default function SignIn() {
         try {
           const response = await fetch(`${backend}/api/signin`, {
             method: "POST",
-            headers: { "Content-Type": ""},
+            headers: { "Content-Type": "application/json"},
             body: JSON.stringify({username, password}), // send this to backend
             credentials: "include",
-        });
+        }).then(() => {
+          console.log("Sign-in attempted")
+        })
 
         const authData = await response.json() // parses through the response object as json
 
