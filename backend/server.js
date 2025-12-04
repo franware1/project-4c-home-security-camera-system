@@ -6,6 +6,8 @@ import morgan from 'morgan';
 import http from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { fileURLToPath } from 'node:url';
 import cookieParser from 'cookie-parser'
 
@@ -19,6 +21,7 @@ function normalizeHost(v) {
 
 const ESP_HOST_RAW = process.env.ESP_HOST || ''; // e.g. "192.168.1.42" or "192.168.1.42:81"
 const ESP_HOST = normalizeHost(ESP_HOST_RAW);    // ensures http:// prefix if missing
+
 const PORT = process.env.PORT || 4000;           // backend port
 
 if (!ESP_HOST) {
@@ -124,6 +127,37 @@ app.use(express.static(distDir));
 app.use((req, res) => {
   res.sendFile(path.join(distDir, 'index.html'));
 });
+
+// ---------- Sign In / Sign Up Backend ----------
+const USER_DB_URL = process.env.USER_DB_URL || 'mongodb://localhost:27017/hscs_user_db';
+
+app.post('/api/signin', (request, response) => {
+  
+  const { username, password } = request.body
+  
+  const user = fetchUser(username)
+  if (!user) return response.status(401).json({error: "User not found"})
+  
+  
+  const passwordAuth = bcrypt.compare(password, user.pwd)
+  if (!passwordAuth) {
+    return response.status(401).json({error: "Invalid password"})
+  }
+  else {return response.status(200).send('User authenticated!')}
+
+  
+
+})
+
+// GET for sign up
+app.get('/api/signup', (request, response) => {
+  
+  const { email, username, password } = request.body
+  if (password)
+
+  newUser(username, email, password)
+
+})
 
 // ---------- Start ----------
 app.listen(PORT, () => {

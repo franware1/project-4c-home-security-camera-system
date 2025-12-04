@@ -1,6 +1,5 @@
 import React, { FormEvent, useEffect, useState } from "react";
 import ReactDom, { useFormStatus } from "react-dom";
-import { fetchUser, newUser } from "../../backend/db-config/database"
 import { Navigate, Outlet, Link } from "react-router-dom"
 import './styles/signin.css';
 
@@ -26,31 +25,43 @@ export default function SignIn() {
     const handleSignIn = async (e: React.FormEvent) => {
       if (!backend) return
       e.preventDefault() // prevents it from reloading the page
+      console.log("Form submitted with", username, password)
 
       const fetchAuth = async () => {
         // (signiuapp.post) authenticate the form input
         try {
+          console.log("Sending request to sign in with", username, password)
           const response = await fetch(`${backend}/api/signin`, {
             method: "POST",
             headers: { "Content-Type": "application/json"},
             body: JSON.stringify({username, password}), // send this to backend
             credentials: "include",
-        }).then(() => {
-          console.log("Sign-in attempted")
-        })
+          })
 
-        const authData = await response.json() // parses through the response object as json
+          if (!response.ok) { // if response status code is not 200
+            const authData = await response.json()
+            console.log("Sign in failed:", authData)
+            showElement();
+            return
+          }
 
-        if (!response.ok) { // if response status code is not 200
-          alert(authData.error || "Login Failed")
-          return
-        }
+          const authData = await response.json() // parse json response
+          if (authData.authToken) {
+            // store authToken in cookie
+            document.cookie = `authToken=${authData.authToken}; path=/;`
+            // redirect to main app page
+            window.location.href = "/App"
+          }
 
+          console.log("Received response:", authData)
         }
         catch (error) {
           console.error("No user found", error)
+          
         }
       }
+
+      fetchAuth()
     }
     
   return (
@@ -83,7 +94,9 @@ export default function SignIn() {
             type="submit"
             title="Sign In"
             color="#0e0d6eff"
-          />
+          >
+            Sign In
+          </button>
         </div>
 
         <div className="forgot-password-link">
@@ -95,9 +108,6 @@ export default function SignIn() {
         </div>
 
       </form>
-
-      if (!usernameExists) <Navigate to='/signin?usernameExists=false'/> {/* if username doesn't exist then appear username doesn't exist message */}
-      passwordAuth ? <Outlet/> : <Navigate to='/signin?passwordAuth=false'/> {/* if password doesn't exist then appear password is incorrect for given username message */}
 
     </div>
   );
