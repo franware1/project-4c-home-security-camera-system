@@ -1,9 +1,9 @@
 import React, { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import ReactDOM, { createRoot } from 'react-dom/client';
 import { Navigate, BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './styles/index.css';
-import App from './App';
-import SignIn from './signin';
+import App from './App.tsx';
+import SignIn from './pages/sign-in.tsx';
 import { CookiesProvider, useCookies } from 'react-cookie'
 
 
