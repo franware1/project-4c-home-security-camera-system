@@ -5,12 +5,12 @@ import '../styles/sign-in.css';
 
 export default function SignUp() {
 
-
     const backend = "http://localhost:8000"
 
     // use react states to set and get username and password
     const [username, setUsername] = useState<string>('')
     const [password, setPassword] = useState<string>('')
+    const [verification, setVerification] = useState<string>('')
     const [email, setEmail] = useState<string>('')
 
     // error codes
@@ -26,7 +26,12 @@ export default function SignUp() {
           const res = await fetch(`${backend}/api/v1/sign/up`, {
             method: "POST",
             headers: { "Content-Type": "application/json"},
-            body: JSON.stringify({username, password}), // send this to backend
+            body: JSON.stringify({
+                email,
+                username, 
+                password,
+                verification
+            }), // send this to backend
             credentials: "include",
           })
           console.log("Sign in attempted")
@@ -42,7 +47,7 @@ export default function SignUp() {
 
         }
         catch (err) {
-          setErrorMessage("No user found")
+          setErrorMessage("Invalid registration")
         }
       }
 
@@ -82,6 +87,16 @@ export default function SignUp() {
         />
         <br />
 
+        Verify Password:
+        <input
+          id="verification"
+          type="verification"
+          value={verification}
+          onChange={(user_typed_verification) => setVerification(user_typed_verification.target.value)} // inline function to change password on screen
+          required // require password for form submission
+        />
+        <br />
+
         <button
           type="submit"
           color="#0e0d6eff"
@@ -89,12 +104,8 @@ export default function SignUp() {
         Sign up
         </button>
 
-        <div className="forgot-password-link">
-          <Link to="/forgotpwd.tsx">Forgot Password?</Link>
-        </div>
-
         <div className="signin-link">
-          Already have an account? <Link to="/signin.tsx">Sign Up</Link>
+          Already have an account? <Link to="/sign-in">Sign In</Link>
         </div>
 
         <div id="error-box">{errorMessage}</div>

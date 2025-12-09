@@ -4,6 +4,7 @@ import { Navigate, BrowserRouter as Router, Routes, Route } from 'react-router-d
 import './styles/index.css';
 import App from './App.tsx';
 import SignIn from './pages/sign-in.tsx';
+import SignUp from './pages/sign-up.tsx';
 import { CookiesProvider, useCookies } from 'react-cookie'
 
 
@@ -11,11 +12,14 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Router>
       <Routes>
-        <Route path="/" element={<Navigate to="/signin" />} />
-        {/* Sign In page */}
-        <Route path="/signin" element={<SignIn />} />
+
         
-        {/* Protected Home page (sign in page must validate your email address and password*/} 
+        <Route path="/" element={<Navigate to="/sign-in" />} />
+        {/* Sign In page */}
+        <Route path="/sign-in" element={<SignIn />} />
+        <Route path="/sign-up" element={<SignUp />} />
+        
+        {/* Protected Home page (sign in page must validate your email address and password) */} 
         <Route
           path="/App"
           element={
@@ -24,6 +28,8 @@ createRoot(document.getElementById('root')!).render(
             </CookiesProvider>
           }
         />
+
+
       </Routes>
     </Router>
   </StrictMode>

@@ -9,11 +9,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         require: true,
     },
-    pwd: {
+    password: {
         // password requirements can be set here as well
         type: String,
         require: true,
-        minLength: 8,
+        minLength: 6,
         maxLength: 16,
         
     }

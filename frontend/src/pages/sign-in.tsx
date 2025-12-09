@@ -28,7 +28,7 @@ export default function SignIn() {
             body: JSON.stringify({username, password}), // send this to backend
             credentials: "include",
           })
-          console.log("Sign in attempted")
+          console.log("Sign in attempted (front)")
 
           const authData = await res.json() // parses through the response object as json
 
@@ -41,7 +41,7 @@ export default function SignIn() {
 
         }
         catch (err) {
-          setErrorMessage("No user found")
+          setErrorMessage("Login error")
         }
       }
 
@@ -83,7 +83,7 @@ export default function SignIn() {
         </div>
 
         <div className="signup-link">
-          Don't have an account? <Link to="/signup.tsx">Sign Up</Link>
+          Don't have an account? <Link to="/sign-up">Sign Up</Link>
         </div>
 
         <div id="error-box">{errorMessage}</div>
