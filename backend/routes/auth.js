@@ -11,13 +11,7 @@ const router = express.Router();
 
 // Middleware 
 router.use(express.json()); // parses json
-router.use(cookieParser()); // parses cookies
-router.use(
-  cors({
-    origin: FRONTEND_ORIGIN,
-    credentials: true,
-  })
-);
+// router.use(cookieParser()); // parses cookies
 
 // sign in
 router.post('/in', async (req, res) => {
@@ -62,5 +56,4 @@ router.post('/up', async (req, res) => {
   // continue to 
 });
 
-
-module.exports = router;
+export default router

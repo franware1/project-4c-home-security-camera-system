@@ -7,6 +7,7 @@ import http from "node:http";
 import https from "node:https";
 import path from "node:path";
 import fs from "node:fs";
+import cors from 'cors';
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
@@ -279,3 +280,5 @@ router.use(express.static(distDir));
 router.use((req, res) => {
   res.sendFile(path.join(distDir, "index.html"));
 });
+
+export default router
