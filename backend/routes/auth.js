@@ -43,7 +43,7 @@ router.post('/in', async (req, res) => {
     console.log("Incorrect password")
     return res.status(400).send({ error: "Incorrect password" });
   } else {
-    const token = jwt.sign({ _id: isUserExist._id }, process.env.SECRET_KEY);
+    const token = jwt.sign({ _id: isUserExist._id }, process.env.SECRET_KEY || "secretkey");
     res.header("auth-token", token).send({ token, user: isUserExist });
     console.log("Sign-in successful")
   }
