@@ -18,9 +18,11 @@ router.use(express.json());
 AS OF RIGHT NOW USERNAME AND PASSWORD ARE UNENCRYPTED
 ****************************************************/
 
-// sign in
+// SIGN IN POST
 router.post('/in', async (req, res) => {
+
   console.log("Sign-in attempted")
+  
   
   const { error } = loginValidation(req.body);
   if (error) {
@@ -35,6 +37,7 @@ router.post('/in', async (req, res) => {
     return res.status(400).send({ error: "User does not exist!" });
   }
 
+  // if everything is valid, send an auth-token in the response header, this is the cookie
   const validPass = req.body.password === isUserExist.password
   if (!validPass) { // incorrect password
     console.log("Incorrect password")
@@ -45,11 +48,17 @@ router.post('/in', async (req, res) => {
     console.log("Sign-in successful")
   }
 
+
 });
 
-// sign up
+
+
+
+// SIGN UP POST
 router.post('/up', async (req, res) => {
+  
   console.log("User registration attempted")
+
 
   const { error } = registerValidation(req.body);
   if (error) {
@@ -57,11 +66,13 @@ router.post('/up', async (req, res) => {
     return res.status(400).send({ error: "Invalid registration" });
   }
 
+
   const isUserExist = await Users.findOne({ email: req.body.email });
   if (isUserExist) {
     console.log("User registration failed")
     return res.status(400).send({ error: "User already exists!" })
   }
+
 
   // continue to register the account
   const passwordsMatch = req.body.password === req.body.verification;
@@ -72,7 +83,7 @@ router.post('/up', async (req, res) => {
   } else {
       try {
         // encrypt user information
-
+        // ...
 
         const newUser = {
           email: req.body.email,
@@ -92,5 +103,6 @@ router.post('/up', async (req, res) => {
   }
 
 });
+
 
 export default router

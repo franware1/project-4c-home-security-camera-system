@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from "react";
 import "./styles/index.css";
-import { WeatherPanel } from "./WeatherPanel";
-
+import { WeatherPanel } from "./utils/WeatherPanel";
+import React from "react"
 import placeholderImg from "./assets/PhotoPlaceholder.jpg";
 import locationIcon from "./assets/locationIcon.png";
 

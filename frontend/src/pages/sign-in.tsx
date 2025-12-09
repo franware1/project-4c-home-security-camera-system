@@ -1,11 +1,10 @@
 import React, { FormEvent, useEffect, useState, Component } from "react";
 import ReactDom, { useFormStatus } from "react-dom";
-import { Navigate, Outlet, Link } from "react-router-dom"
-import { useCookies } from "react-cookie"
+import { Navigate, Outlet, Link, useNavigate } from "react-router-dom"
+import { CookiesProvider, useCookies } from "react-cookie"
 import '../styles/sign-in.css';
 
 export default function SignIn() {
-
 
     const backend = "http://localhost:8000"
 
@@ -18,6 +17,7 @@ export default function SignIn() {
 
     // cookies
     const [cookies, setCookies] = useCookies(["auth-token"])
+    const navigate = useNavigate()
 
     const handleSubmit = async (e: FormEvent) => {
       e.preventDefault() // prevents it from reloading the page
@@ -42,6 +42,11 @@ export default function SignIn() {
           }
 
           setErrorMessage("")
+          console.log("Sign-in successful")
+          setCookies("auth-token", authToken.token, { path: "/", maxAge: 60*60*24*7 })
+          
+          
+          navigate("/App")
 
         }
         catch (err) {

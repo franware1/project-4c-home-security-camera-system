@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { useEffect, useState } from "react";
-import type { WeatherData } from "./Weather";
+import type { WeatherData } from "./Weather.ts";
 
 const API_KEY = "0fdd2b72504fbc8706040b30ab60441e";
 
