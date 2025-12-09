@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from "react";
-import "./styles/index.css";
-import { WeatherPanel } from "./utils/WeatherPanel";
-import React from "react"
+import "./index.css";
+import { WeatherPanel } from "./WeatherPanel";
+
 import placeholderImg from "./assets/PhotoPlaceholder.jpg";
 import locationIcon from "./assets/locationIcon.png";
 
@@ -11,7 +11,7 @@ type Camera = {
   baseUrl: string;
 };
 
-export default function App() {
+function App() {
   // Backend address
   const backend = "http://localhost:8000";
 
@@ -52,7 +52,7 @@ export default function App() {
     isStreaming &&
     selectedCameraId &&
     enabledCameras[selectedCameraId] !== false
-      ? buildUrl(`/api/v1/server/server/cameras/${selectedCameraId}/stream`)
+      ? buildUrl(`/api/cameras/${selectedCameraId}/stream`)
       : "";
 
   const startStream = () => {
@@ -70,7 +70,7 @@ export default function App() {
   useEffect(() => {
     const fetchCameras = async () => {
       try {
-        const res = await fetch(buildUrl("/api/v1/server/cameras"));
+        const res = await fetch(buildUrl("/api/cameras"));
         if (!res.ok) throw new Error("Failed to fetch cameras");
         const data: Camera[] = await res.json();
         setCameras(data);
@@ -112,7 +112,7 @@ export default function App() {
     const fetchInfo = async () => {
       try {
         const res = await fetch(
-          buildUrl(`/api/v1/server/cameras/${selectedCameraId}/info`)
+          buildUrl(`/api/cameras/${selectedCameraId}/info`)
         );
         if (!res.ok) throw new Error("Failed to fetch camera info");
         const data = await res.json();
@@ -136,7 +136,7 @@ export default function App() {
         return;
       }
 
-      const url = buildUrl(`/api/v1/server/cameras/${selectedCameraId}/capture`);
+      const url = buildUrl(`/api/cameras/${selectedCameraId}/capture`);
       try {
         const res = await fetch(url);
         if (!res.ok) throw new Error("Snapshot failed");
@@ -163,7 +163,7 @@ export default function App() {
     }
 
     const action = isRecording ? "stop" : "start";
-    const url = buildUrl(`/api/v1/server/cameras/${selectedCameraId}/record/${action}`);
+    const url = buildUrl(`/api/cameras/${selectedCameraId}/record/${action}`);
 
     try {
       const res = await fetch(url, { method: "POST" });
@@ -192,7 +192,7 @@ export default function App() {
 
     setFlashLevel(level);
     const pwm = levelToPwm(level);
-    const url = buildUrl(`/api/v1/server/cameras/${selectedCameraId}/flash?pwm=${pwm}`);
+    const url = buildUrl(`/api/cameras/${selectedCameraId}/flash?pwm=${pwm}`);
     if (!url) return alert("Backend address missing!");
 
     try {
