@@ -32,7 +32,7 @@
 
 // ---- Camera defaults (fixed VGA) ----
 #define DEFAULT_FRAMESIZE FRAMESIZE_VGA  // 640x480
-#define DEFAULT_JPEG_QUALITY 35          // 10(best)..63(worst), higher=faster
+#define DEFAULT_JPEG_QUALITY 35          // 10(best)..63 (worst), higher=faster
 
 // ---- AI-Thinker pins (DO NOT CHANGE) ----
 #define PWDN_GPIO_NUM 32
