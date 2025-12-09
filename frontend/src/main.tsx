@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { Navigate, BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './styles/index.css';
 import App from './App';
-import SignIn from './signin';
+import SignIn from './pages/sign-in';
 import { CookiesProvider, useCookies, Cookies } from 'react-cookie'
 
 
@@ -25,9 +25,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Router>
       <Routes>
-        <Route path="/" element={<Navigate to="/signin"/>} />
+        <Route path="/" element={<Navigate to="/sign-in"/>} />
         {/* Sign In page */}
-        <Route path="/signin" element={<SignIn />} />
+        <Route path="/sign-in" element={<SignIn />} />
         
         {/* Protected Home page (sign in page must validate your email address and password*/} 
         <Route
