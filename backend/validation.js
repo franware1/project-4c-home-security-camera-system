@@ -9,7 +9,8 @@ const registerSchema = z.object({
 
     email: z.union([
         z.string().endsWith("@gmail.com"),
-        z.string().endsWith(".com")
+        z.string().endsWith(".com"),
+        z.string().endsWith(".edu"),
     ]),
 
     password: z.string().
