@@ -1,7 +1,7 @@
 import React, { FormEvent, useEffect, useState, Component } from "react";
 import ReactDom, { useFormStatus } from "react-dom";
 import { Navigate, Outlet, Link } from "react-router-dom"
-import './styles/signin.css';
+import '../styles/sign-in.css';
 
 export default function SignIn() {
 
@@ -89,10 +89,6 @@ export default function SignIn() {
         <div id="error-box">{errorMessage}</div>
 
       </form>
-
-      if (!usernameExists) <Navigate to='/signin?usernameExists=false'/> {/* if username doesn't exist then appear username doesn't exist message */}
-      passwordAuth ? <Outlet/> : <Navigate to='/signin?passwordAuth=false'/> {/* if password doesn't exist then appear password is incorrect for given username message */}
-
     </div>
   );
 }

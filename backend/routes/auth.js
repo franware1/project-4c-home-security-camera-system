@@ -1,7 +1,7 @@
 import express from 'express'
-import cors from 'cors'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import User from '../db-schema/User.js'
 import { registerValidation, loginValidation } from '../validation.js'
@@ -10,7 +10,8 @@ import { registerValidation, loginValidation } from '../validation.js'
 const router = express.Router();
 
 // Middleware 
-router.use(express.json()); // parses json
+router.use(express.json());
+
 // router.use(cookieParser()); // parses cookies
 
 // sign in
@@ -53,7 +54,10 @@ router.post('/up', async (req, res) => {
     return res.status(400).send({ msg: "User already exists!" })
   }
 
-  // continue to 
+  // continue to register the account
+  
+
+
 });
 
 export default router

@@ -2,12 +2,11 @@
 import "dotenv/config";
 import "../db.js"
 import express from "express";
-import morgan from "morgan";
 import http from "node:http";
 import https from "node:https";
 import path from "node:path";
 import fs from "node:fs";
-import cors from 'cors';
+import cors from "cors"
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
@@ -71,10 +70,6 @@ if (!fs.existsSync(recordingsDir)) {
 // Map of active recordings: cameraId -> { filePath, ffmpeg }
 const activeRecordings = new Map();
 
-// ---------- Middleware ----------
-router.use(cors());
-router.use(morgan("dev"));
-router.use(express.json());
 
 // Helper to choose http/https based on baseUrl
 function getHttpClient(url) {
@@ -273,7 +268,7 @@ router.get("/health", (req, res) => {
 });
 
 // ---------- Static Frontend (React build) ----------
-const distDir = path.join(__dirname, "../frontend/dist");
+const distDir = path.join(__dirname, "../../frontend/dist");
 
 router.use(express.static(distDir));
 
@@ -281,4 +276,5 @@ router.use((req, res) => {
   res.sendFile(path.join(distDir, "index.html"));
 });
 
+export { CAMERAS }
 export default router
