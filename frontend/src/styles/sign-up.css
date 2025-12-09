@@ -1,6 +1,5 @@
-/* sign-in.css */
+/* sign-up.css */
 
-/* General body styles */
 body {
   margin: 0;
   padding: 0;
@@ -12,10 +11,9 @@ body {
   height: 100vh;
 }
 
-/* Container for the sign-in form */
-.signin-container {
+/* Container for the sign-up form */
+.signup-container {
   background-color: #ffffff;
-  justify-self: center;
   padding: 40px 30px;
   border-radius: 10px;
   box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.1);
@@ -94,8 +92,8 @@ body {
     padding: 30px 20px;
   }
 
-  .signin-form input,
-  .signin-form button {
+  .signup-form input,
+  .signup-form button {
     font-size: 14px;
     padding: 10px;
   }

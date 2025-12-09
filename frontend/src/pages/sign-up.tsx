@@ -1,7 +1,7 @@
 import React, { FormEvent, useEffect, useState, Component } from "react";
 import ReactDom, { useFormStatus } from "react-dom";
 import { Navigate, Outlet, Link } from "react-router-dom"
-import '../styles/sign-in.css';
+import '../styles/sign-up.css';
 
 export default function SignUp() {
 
