@@ -14,28 +14,30 @@ router.use(express.json());
 
 // router.use(cookieParser()); // parses cookies
 
+/****************************************************
+AS OF RIGHT NOW USERNAME AND PASSWORD ARE UNENCRYPTED
+****************************************************/
+
 // sign in
 router.post('/in', async (req, res) => {
   console.log("Sign-in attempted")
   
   const { error } = loginValidation(req.body);
   if (error) {
-    console.log("Sign-in failed")
+    console.log("Invalid login")
     return res.status(400).send({ error: "Invalid login" });
   }
 
 
-  const isUserExist = await Users.findOne({ email: req.body.email }); // User object
+  const isUserExist = await Users.findOne({ username: req.body.username }); // User object
   if (!isUserExist) {
-    console.log("Sign-in failed")
+    console.log("User doesn't exist")
     return res.status(400).send({ error: "User does not exist!" });
   }
 
-  const validPass = await bcrypt.compare(
-    req.body.password,
-    isUserExist.password
-  );
+  const validPass = req.body.password === isUserExist.password
   if (!validPass) { // incorrect password
+    console.log("Incorrect password")
     return res.status(400).send({ error: "Incorrect password" });
   } else {
     const token = jwt.sign({ _id: isUserExist._id }, process.env.SECRET_KEY);
@@ -55,23 +57,23 @@ router.post('/up', async (req, res) => {
     return res.status(400).send({ error: "Invalid registration" });
   }
 
-  const isUserExist = await User.findOne({ email: req.body.email });
+  const isUserExist = await Users.findOne({ email: req.body.email });
   if (isUserExist) {
     console.log("User registration failed")
     return res.status(400).send({ error: "User already exists!" })
   }
 
   // continue to register the account
-  const verifPass = await string.compare(
-    req.body.password,
-    req.body.verification
-  )
+  const passwordsMatch = req.body.password === req.body.verification;
 
-  if (!verifPass) {
+  if (!passwordsMatch) {
     console.log("User registration failed")
     return res.status(400).send({ error: "Passwords do not match" })
   } else {
       try {
+        // encrypt user information
+
+
         const newUser = {
           email: req.body.email,
           username: req.body.username,
@@ -81,6 +83,7 @@ router.post('/up', async (req, res) => {
         const result = await Users.insertOne(newUser)
 
         console.log(`A user was created in Users with the _id: ${result.insertedId}`)
+        return res.status(200).send({})
 
       } catch (err) {
       console.log(`User was unable to be created in Users`)

@@ -1,6 +1,7 @@
 import React, { FormEvent, useEffect, useState, Component } from "react";
 import ReactDom, { useFormStatus } from "react-dom";
 import { Navigate, Outlet, Link } from "react-router-dom"
+import { useCookies } from "react-cookie"
 import '../styles/sign-in.css';
 
 export default function SignIn() {
@@ -14,6 +15,9 @@ export default function SignIn() {
 
     // error codes
     const [errorMessage, setErrorMessage] = useState<string>('')
+
+    // cookies
+    const [cookies, setCookies] = useCookies(["auth-token"])
 
     const handleSubmit = async (e: FormEvent) => {
       e.preventDefault() // prevents it from reloading the page
@@ -30,10 +34,10 @@ export default function SignIn() {
           })
           console.log("Sign in attempted (front)")
 
-          const authData = await res.json() // parses through the response object as json
+          const authToken = await res.json() // parses through the response object as json
 
           if (!res.ok) { // if response status code is not 200
-            setErrorMessage(authData.error)
+            setErrorMessage(authToken.error)
             return
           }
 

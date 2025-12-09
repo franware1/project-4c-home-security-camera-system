@@ -34,16 +34,16 @@ export default function SignUp() {
             }), // send this to backend
             credentials: "include",
           })
-          console.log("Sign in attempted")
+          console.log("Sign up attempted")
 
           const authData = await res.json() // parses through the response object as json
 
           if (!res.ok) { // if response status code is not 200
             setErrorMessage(authData.error)
             return
+          } else {
+            setErrorMessage("")
           }
-
-          setErrorMessage("")
 
         }
         catch (err) {

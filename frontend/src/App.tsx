@@ -52,7 +52,7 @@ export default function App() {
     isStreaming &&
     selectedCameraId &&
     enabledCameras[selectedCameraId] !== false
-      ? buildUrl(`/api/v1/cameras/${selectedCameraId}/stream`)
+      ? buildUrl(`/api/v1/server/server/cameras/${selectedCameraId}/stream`)
       : "";
 
   const startStream = () => {
@@ -70,7 +70,7 @@ export default function App() {
   useEffect(() => {
     const fetchCameras = async () => {
       try {
-        const res = await fetch(buildUrl("/api/v1/cameras"));
+        const res = await fetch(buildUrl("/api/v1/server/cameras"));
         if (!res.ok) throw new Error("Failed to fetch cameras");
         const data: Camera[] = await res.json();
         setCameras(data);
@@ -112,7 +112,7 @@ export default function App() {
     const fetchInfo = async () => {
       try {
         const res = await fetch(
-          buildUrl(`/api/v1/cameras/${selectedCameraId}/info`)
+          buildUrl(`/api/v1/server/cameras/${selectedCameraId}/info`)
         );
         if (!res.ok) throw new Error("Failed to fetch camera info");
         const data = await res.json();
@@ -136,7 +136,7 @@ export default function App() {
         return;
       }
 
-      const url = buildUrl(`/api/v1/cameras/${selectedCameraId}/capture`);
+      const url = buildUrl(`/api/v1/server/cameras/${selectedCameraId}/capture`);
       try {
         const res = await fetch(url);
         if (!res.ok) throw new Error("Snapshot failed");
@@ -163,7 +163,7 @@ export default function App() {
     }
 
     const action = isRecording ? "stop" : "start";
-    const url = buildUrl(`/api/v1/cameras/${selectedCameraId}/record/${action}`);
+    const url = buildUrl(`/api/v1/server/cameras/${selectedCameraId}/record/${action}`);
 
     try {
       const res = await fetch(url, { method: "POST" });
@@ -192,7 +192,7 @@ export default function App() {
 
     setFlashLevel(level);
     const pwm = levelToPwm(level);
-    const url = buildUrl(`/api/v1/cameras/${selectedCameraId}/flash?pwm=${pwm}`);
+    const url = buildUrl(`/api/v1/server/cameras/${selectedCameraId}/flash?pwm=${pwm}`);
     if (!url) return alert("Backend address missing!");
 
     try {
