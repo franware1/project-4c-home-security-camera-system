@@ -1,102 +1,105 @@
-/* sign-in.css */
-
-/* General body styles */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f0f2f5;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-
-/* Container for the sign-in form */
+/* === Container === */
 .signin-container {
-  background-color: #ffffff;
-  justify-self: center;
-  padding: 40px 30px;
-  border-radius: 10px;
-  box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 400px;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f6fa;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-/* The form itself */
+/* === Form Card === */
 .signin-form {
+  background: #ffffff;
+  padding: 2.5rem 3rem;
+  border-radius: 10px;
+  width: 360px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.95rem;
 }
 
-/* Labels and inputs */
+/* === Inputs === */
 .signin-form input {
-  margin-top: 5px;
-  margin-bottom: 20px;
-  padding: 12px 10px;
-  font-size: 16px;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  margin-top: 0.25rem;
+  border: 1px solid #d1d3d8;
   border-radius: 6px;
-  border: 1px solid #ccc;
-  transition: border-color 0.3s;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
 }
 
 .signin-form input:focus {
-  border-color: #4a90e2;
+  border-color: #0e0d6e;
   outline: none;
+  box-shadow: 0 0 4px rgba(14, 13, 110, 0.3);
 }
 
-/* Submit button */
+/* === Button === */
 .signin-form button {
-  background-color: #4a90e2;
-  color: #ffffff;
-  padding: 12px 0;
-  font-size: 16px;
+  margin-top: 1rem;
+  padding: 0.7rem;
+  width: 100%;
   border: none;
+  background: #0e0d6e;
+  color: white;
   border-radius: 6px;
+  font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background 0.25s ease;
 }
 
 .signin-form button:hover {
-  background-color: #357abd;
+  background: #1b1994;
 }
 
-/* Error message styling */
-#error-box {
-  color: #d93025;
-  margin-top: 10px;
-  font-size: 14px;
+/* === Forgot Password Link === */
+.forgot-password-link {
+  margin-top: 0.3rem;
+  font-size: 0.9rem;
+  text-align: center;
 }
 
-/* Links */
-.forgot-password-link,
-.signup-link {
-  margin-top: 10px;
-  font-size: 14px;
-}
-
-.forgot-password-link a,
-.signup-link a {
-  color: #4a90e2;
+.forgot-password-link a {
+  color: #0e0d6e;
+  font-weight: 600;
   text-decoration: none;
-  transition: color 0.3s;
 }
 
-.forgot-password-link a:hover,
-.signup-link a:hover {
-  color: #357abd;
+.forgot-password-link a:hover {
   text-decoration: underline;
 }
 
-/* Responsive adjustments */
-@media (max-width: 480px) {
-  .signin-container {
-    padding: 30px 20px;
-  }
+/* === Signup Link === */
+.signup-link {
+  margin-top: 0.3rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
 
-  .signin-form input,
-  .signin-form button {
-    font-size: 14px;
-    padding: 10px;
-  }
+.signup-link a {
+  color: #0e0d6e;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.signup-link a:hover {
+  text-decoration: underline;
+}
+
+/* === Error Box === */
+#error-box {
+  margin-top: 0.8rem;
+  padding: 0.6rem;
+  min-height: 20px;
+  color: #b30000;
+  background: #ffe5e5;
+  border: 1px solid #ffb3b3;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  text-align: center;
 }

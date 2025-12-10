@@ -13,7 +13,7 @@ type Camera = {
 
 export default function App() {
   // Backend address (mounted at /server)
-  const backend = "http://localhost:8002/server";
+  const backend = "http://localhost:8000/api/v1/server";
 
   // List of cameras + which one is selected
   const [cameras, setCameras] = useState<Camera[]>([]);

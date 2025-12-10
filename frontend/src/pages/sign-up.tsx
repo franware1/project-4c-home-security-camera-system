@@ -5,7 +5,7 @@ import '../styles/sign-up.css';
 
 export default function SignUp() {
 
-    const backend = "http://localhost:8002"
+    const backend = "http://localhost:8000"
 
     // use react states to set and get username and password
     const [username, setUsername] = useState<string>('')
