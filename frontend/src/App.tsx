@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect } from "react";
-import "./index.css";
-import { WeatherPanel } from "./WeatherPanel";
+import "./styles/index.css";
+import { WeatherPanel } from "./components/WeatherPanel";
 
 import placeholderImg from "./assets/PhotoPlaceholder.jpg";
 import locationIcon from "./assets/locationIcon.png";
@@ -11,7 +11,7 @@ type Camera = {
   baseUrl: string;
 };
 
-function App() {
+export default function App() {
   // Backend address
   const backend = "http://localhost:8000";
 
