@@ -5,13 +5,13 @@ import '../styles/sign-up.css';
 
 export default function SignUp() {
 
-    const backend = "http://localhost:8001"
+    const backend = "http://localhost:8002"
 
     // use react states to set and get username and password
-    const [username, setUsername] = useState<string>('denni05')
-    const [password, setPassword] = useState<string>('12345678')
-    const [verification, setVerification] = useState<string>('12345678')
-    const [email, setEmail] = useState<string>('denni05@gmail.com')
+    const [username, setUsername] = useState<string>('')
+    const [password, setPassword] = useState<string>('')
+    const [verification, setVerification] = useState<string>('')
+    const [email, setEmail] = useState<string>('')
 
     // error codes
     const [errorMessage, setErrorMessage] = useState<string>('')

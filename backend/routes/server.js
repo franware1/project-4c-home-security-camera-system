@@ -31,7 +31,7 @@ const CAMERAS = [
   {
     id: "back",
     label: "Back Yard",
-    baseUrl: normalizeHost(process.env.CAM_BACK || "http://192.168.1.52"),
+    baseUrl: normalizeHost(process.env.CAM_BACK || "192.168.12.205"),
   },
 ].filter((cam) => !!cam.baseUrl);
 

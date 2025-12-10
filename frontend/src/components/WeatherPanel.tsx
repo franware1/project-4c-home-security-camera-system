@@ -46,7 +46,6 @@ export function WeatherPanel() {
           throw new Error(`Current weather failed: ${res.status}`);
         }
         const current: WeatherData = await res.json();
-        console.log("Current weather:", current);
         setWeather(current);
       } catch (err) {
         console.error("Current weather error:", err);
@@ -69,7 +68,6 @@ export function WeatherPanel() {
         }
 
         const forecast: ForecastData = await res.json();
-        console.log("Forecast data:", forecast);
 
         if (!forecast.list || forecast.list.length === 0) {
           console.error("No forecast list found in /forecast response");
