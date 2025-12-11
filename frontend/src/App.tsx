@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect } from "react";
-import "./index.css";
-import { WeatherPanel } from "./WeatherPanel";
+import "./styles/index.css";
+import { WeatherPanel } from "./utils/WeatherPanel";
 
 import placeholderImg from "./assets/PhotoPlaceholder.jpg";
 import locationIcon from "./assets/locationIcon.png";
@@ -13,7 +13,7 @@ type Camera = {
 
 function App() {
   // Backend address
-  const backend = "http://localhost:8000";
+  const backend = "http://localhost:8000/api/v1/server";
 
   // List of cameras + which one is selected
   const [cameras, setCameras] = useState<Camera[]>([]);
@@ -138,9 +138,11 @@ function App() {
 
       const url = buildUrl(`/api/cameras/${selectedCameraId}/capture`);
       try {
+
         const res = await fetch(url);
         if (!res.ok) throw new Error("Snapshot failed");
         const blob = await res.blob();
+
         const dl = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = dl;
@@ -454,3 +456,5 @@ function App() {
     </div>
   );
 }
+
+export default App
