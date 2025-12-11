@@ -25,16 +25,16 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Router>
       <Routes>
-        <Route path="/" element={<Navigate to="/sign-in"/>} />
+        <Route path="/" element={<Navigate to="/signin" />} />
         {/* Sign In page */}
-        <Route path="/sign-in" element={<SignIn />} />
+        <Route path="/signin" element={<SignIn />} />
         
         {/* Protected Home page (sign in page must validate your email address and password*/} 
         <Route
           path="/App"
           element={
             <CookiesProvider defaultSetOptions={{path: '/'}}>
-              <AppWrapper />
+              <App />
             </CookiesProvider>
           }
         />

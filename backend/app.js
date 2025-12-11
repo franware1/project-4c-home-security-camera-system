@@ -25,7 +25,7 @@ app.use(cors({
 }))
 
 // routes
-app.use("/api/v1/", server)
+app.use("/api/v1/server", server)
 app.use("/api/v1/sign", auth)
 
 app.listen(PORT, () => {
