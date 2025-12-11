@@ -1,4 +1,5 @@
-import React, { FormEvent, useEffect, useState, Component } from "react";
+import React, { useEffect, useState, Component } from "react";
+import type { FormEvent } from "react";
 import ReactDom, { useFormStatus } from "react-dom";
 import { Navigate, Outlet, Link } from "react-router-dom"
 import '../styles/sign-up.css';
