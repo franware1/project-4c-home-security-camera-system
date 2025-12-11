@@ -52,7 +52,7 @@ function App() {
     isStreaming &&
     selectedCameraId &&
     enabledCameras[selectedCameraId] !== false
-      ? buildUrl(`/api/cameras/${selectedCameraId}/stream`)
+      ? buildUrl(`/cameras/${selectedCameraId}/stream`)
       : "";
 
   const startStream = () => {
@@ -70,7 +70,7 @@ function App() {
   useEffect(() => {
     const fetchCameras = async () => {
       try {
-        const res = await fetch(buildUrl("/api/cameras"));
+        const res = await fetch(buildUrl("/cameras"));
         if (!res.ok) throw new Error("Failed to fetch cameras");
         const data: Camera[] = await res.json();
         setCameras(data);
@@ -112,7 +112,7 @@ function App() {
     const fetchInfo = async () => {
       try {
         const res = await fetch(
-          buildUrl(`/api/cameras/${selectedCameraId}/info`)
+          buildUrl(`/cameras/${selectedCameraId}/info`)
         );
         if (!res.ok) throw new Error("Failed to fetch camera info");
         const data = await res.json();
@@ -131,12 +131,14 @@ function App() {
   // Snapshot (for selected camera)
   const snap = useCallback(
     async () => {
+      console.log("Snapshot attempted")
+
       if (!selectedCameraId || enabledCameras[selectedCameraId] === false) {
         alert("No enabled camera selected");
         return;
       }
 
-      const url = buildUrl(`/api/cameras/${selectedCameraId}/capture`);
+      const url = buildUrl(`/cameras/${selectedCameraId}/capture`);
       try {
 
         const res = await fetch(url);
@@ -153,7 +155,10 @@ function App() {
         console.error(err);
         alert("Snapshot failed.");
       }
+      
+      console.log("Snapshot success");
     },
+    
     [selectedCameraId, enabledCameras]
   );
 
@@ -165,7 +170,7 @@ function App() {
     }
 
     const action = isRecording ? "stop" : "start";
-    const url = buildUrl(`/api/cameras/${selectedCameraId}/record/${action}`);
+    const url = buildUrl(`/cameras/${selectedCameraId}/record/${action}`);
 
     try {
       const res = await fetch(url, { method: "POST" });
@@ -194,7 +199,7 @@ function App() {
 
     setFlashLevel(level);
     const pwm = levelToPwm(level);
-    const url = buildUrl(`/api/cameras/${selectedCameraId}/flash?pwm=${pwm}`);
+    const url = buildUrl(`/cameras/${selectedCameraId}/flash?pwm=${pwm}`);
     if (!url) return alert("Backend address missing!");
 
     try {
