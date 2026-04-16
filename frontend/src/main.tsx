@@ -1,44 +1,42 @@
-import React, { StrictMode, useEffect, useState } from 'react';
-import { createRoot } from 'react-dom/client';
-import { Navigate, BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import './styles/index.css';
-import App from './App';
-import SignIn from './pages/sign-in';
-import { CookiesProvider, useCookies, Cookies } from 'react-cookie'
+import React, { StrictMode } from "react";
+import ReactDOM, { createRoot } from "react-dom/client";
+import {
+  Navigate,
+  BrowserRouter as Router,
+  Routes,
+  Route,
+} from "react-router-dom";
+import App from "./App.tsx";
+import SignIn from "./pages/sign-in.tsx";
+import SignUp from "./pages/sign-up.tsx";
+import { CookiesProvider } from "react-cookie";
+import ProtectedRoute from "./utils/ProtectedRoute.tsx";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./styles/index.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 
-// protect the App by validating cookies. if cookie not found, redirect to /signin?
-const AppWrapper = () => {
-  const [cookies, setCookie, removeCookie] = useCookies(['authToken']);
-
-  useEffect(() => {
-    const authToken = cookies.authToken;
-    if (!authToken) {
-      window.location.href = "/signin?auth=false";
-    }
-  }, [cookies]);
-
-  return <App />;
-}
-
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/signin" />} />
-        {/* Sign In page */}
-        <Route path="/signin" element={<SignIn />} />
-        
-        {/* Protected Home page (sign in page must validate your email address and password*/} 
-        <Route
-          path="/App"
-          element={
-            <CookiesProvider defaultSetOptions={{path: '/'}}>
-              <App />
-            </CookiesProvider>
-          }
-        />
-      </Routes>
-    </Router>
+    <CookiesProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Navigate to="/sign-in" />} />
+          {/* Sign In page */}
+          <Route path="/sign-in" element={<SignIn />} />
+          <Route path="/sign-up" element={<SignUp />} />
+
+          {/* Protected Home page (sign in page must validate your email address and password) */}
+          <Route
+            path="/App"
+            element={
+              <ProtectedRoute>
+                <App />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </CookiesProvider>
   </StrictMode>
 );
