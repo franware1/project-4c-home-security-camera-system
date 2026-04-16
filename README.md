@@ -1,10 +1,10 @@
-# 🏠 Home Security Camera System
+# Home Security Camera System
 
 A low-cost, motion-triggered video monitoring system built with an **ESP32-CAM** and a full-stack web application. Records clips on motion detection, sends real-time alerts, and supports privacy controls including arming/disarming, region masking, and local storage — no cloud required.
 
 ---
 
-## ✨ Features
+## Features
 
 - 📷 **Motion-triggered recording** — Automatically captures video clips when movement is detected
 - 🔔 **Real-time alerts** — Instant notifications when motion events occur
@@ -16,7 +16,7 @@ A low-cost, motion-triggered video monitoring system built with an **ESP32-CAM**
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -27,7 +27,7 @@ A low-cost, motion-triggered video monitoring system built with an **ESP32-CAM**
 
 ---
 
-## 🔧 Hardware Requirements
+## Hardware Requirements
 
 - **ESP32-CAM** module (AI-Thinker or compatible)
 - USB-to-TTL serial adapter (for flashing firmware)
@@ -37,7 +37,7 @@ A low-cost, motion-triggered video monitoring system built with an **ESP32-CAM**
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Flash the ESP32-CAM firmware
 
@@ -72,7 +72,7 @@ Then open your browser and navigate to `http://localhost:5173` (or whichever por
 
 ---
 
-## ⚙️ Configuration
+## ️Configuration
 
 Create a `.env` file in `backend/` with the following variables:
 
@@ -84,7 +84,7 @@ STORAGE_PATH=./clips         # Directory for saved video clips
 
 ---
 
-## 📸 Usage
+## Usage
 
 1. Power on the ESP32-CAM and confirm it connects to your Wi-Fi (check Serial Monitor for its IP)
 2. Start the backend and frontend servers
@@ -101,7 +101,7 @@ This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-## 🙋 Author
+## Authors
 
 **Francisco Vu** — [franware1](https://github.com/franware1)
 **Denis Hallvaxhiu** - [DenisHallvaxhiu](https://github.com/DenisHallvaxhiu)
