@@ -95,7 +95,7 @@ export default function SignIn() {
           Don't have an account? <Link to="/sign-up">Sign Up</Link>
         </div>
 
-        <div id="error-box">{errorMessage}</div>
+        {errorMessage && <div id="error-box">{errorMessage}</div>}
 
       </form>
     </div>
