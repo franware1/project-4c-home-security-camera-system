@@ -6,12 +6,12 @@ A low-cost, motion-triggered video monitoring system built with an **ESP32-CAM**
 
 ## Features
 
-- 📷 **Motion-triggered recording** — Automatically captures video clips when movement is detected
-- 🔔 **Real-time alerts** — Instant notifications when motion events occur
-- 🔒 **Arming & disarming** — Enable or disable monitoring remotely via the web UI
-- 🟥 **Privacy masking** — Define regions of the frame to exclude from detection and recording
-- 💾 **Local storage** — Footage saved locally, keeping your data off third-party servers
-- 🌐 **Live stream** — View the camera feed in real time from any browser on your network
+- **Motion-triggered recording** — Automatically captures video clips when movement is detected
+- **Real-time alerts** — Instant notifications when motion events occur
+- **Arming & disarming** — Enable or disable monitoring remotely via the web UI
+- **Privacy masking** — Define regions of the frame to exclude from detection and recording
+- **Local storage** — Footage saved locally, keeping your data off third-party servers
+- **Live stream** — View the camera feed in real time from any browser on your network
 
 
 ---
@@ -95,7 +95,7 @@ STORAGE_PATH=./clips         # Directory for saved video clips
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE).
 
