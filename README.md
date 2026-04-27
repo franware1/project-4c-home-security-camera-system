@@ -1,6 +1,6 @@
-# Home Security Camera System
+# LocalVision
 
-A low-cost, motion-triggered video monitoring system built with an **ESP32-CAM** and a full-stack web application. Records clips on motion detection, sends real-time alerts, and supports privacy controls including arming/disarming, region masking, and local storage — no cloud required.
+A low-cost, motion-triggered video monitoring system for the home. Built with an **ESP32-CAM** and a full-stack web application. Records clips on motion detection, sends real-time alerts, and supports privacy controls including arming/disarming, region masking, and local storage — no cloud required.
 
 ---
 
