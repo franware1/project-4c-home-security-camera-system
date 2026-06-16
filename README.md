@@ -1,6 +1,6 @@
 # LocalVision
 
-A low-cost, motion-triggered video monitoring system for the home. Built with an **ESP32-CAM** and a full-stack web application. Records clips on motion detection, sends real-time alerts, and supports privacy controls including arming/disarming, region masking, and local storage — no cloud required.
+LocalVision is a system that connects an **ESP32** camera to a fully responsive user interface that allows homeowners to monitor their property for a low cost. The camera system is fully self-hosted and local. 
 
 ---
 
